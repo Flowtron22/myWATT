@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071612">
+  <meta name="description" content="An interactive Malaysian home electricity bill simulator using the RP4 domestic tariff and September 2026 AFA.">
+  <title>RumahWatt — Malaysian Electricity Simulator</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect rx='14' width='64' height='64' fill='%23071612'/%3E%3Cpath d='M12 31 32 13l20 18v22H38V39H26v14H12Z' fill='%23f4c84a'/%3E%3Cpath d='m35 20-11 17h8l-3 13 12-19h-8Z' fill='%23071612'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="RumahWatt home">
+        <span class="brand-mark">⌁</span>
+        <span>RUMAH<span>WATT</span></span>
+      </a>
+      <div class="tariff-stamp">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        Peninsular Malaysia · Sep 2026 rules
+      </div>
+      <button class="ghost-button" id="resetButton" type="button">Reset house</button>
+    </header>
+
+    <main>
+      <section class="house-panel" aria-labelledby="houseTitle">
+        <div class="scene-heading">
+          <div>
+            <p class="eyebrow">YOUR HOUSE · 30-DAY ESTIMATE</p>
+            <h1 id="houseTitle">Every switch changes the bill.</h1>
+          </div>
+          <div class="day-controls" aria-label="Day simulation controls">
+            <div class="play-wrap">
+              <button class="play-button" id="playButton" type="button" aria-pressed="false"><span>▶</span> Run simulation</button>
+              <small>Watch your selected days build a real bill</small>
+            </div>
+            <div class="clock-wrap">
+              <span id="simTime">07:00</span>
+              <label><span class="sr-only">Time of day</span><input id="timeSlider" type="range" min="0" max="1439" value="420"></label>
+            </div>
+            <div class="speed-control" aria-label="Simulation speed">
+              <button class="active" type="button" data-speed="1" aria-pressed="true">1×</button>
+              <button type="button" data-speed="8" aria-pressed="false">8×</button>
+              <button type="button" data-speed="24" aria-pressed="false">24×</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="scene-wrap" id="sceneWrap">
+          <canvas id="houseCanvas" aria-label="Interactive isometric house. Select an appliance to switch it on or off."></canvas>
+          <div class="scene-tooltip" id="sceneTooltip" role="status" aria-live="polite"></div>
+          <div class="scene-legend"><span></span><b id="liveLoad">0.00 kW</b><em id="activeCount">0 appliances running</em></div>
+          <section class="run-card" aria-labelledby="runTitle">
+            <div class="run-heading">
+              <div><p class="eyebrow">LIVE BILLING RUN</p><h2 id="runTitle">Day <b id="runDay">0</b> of <b id="runTarget">30</b></h2></div>
+              <span id="runState">READY</span>
+            </div>
+            <div class="run-progress"><i id="runProgress"></i></div>
+            <div class="run-metrics">
+              <div><span>Energy so far</span><b id="runKwh">0.0 kWh</b></div>
+              <div><span>Running bill</span><b id="runBill">RM 5.00</b></div>
+            </div>
+            <label class="occupancy-control" for="homeDays"><span>Days at home</span><b><em id="homeDaysValue">30</em> days</b></label>
+            <input id="homeDays" type="range" min="0" max="30" step="1" value="30">
+            <p id="holidayNote">No holiday days in this billing month.</p>
+            <button id="runReset" type="button">Reset simulation</button>
+          </section>
+          <div class="weather-pill"><b>32°C</b><span>Kuala Lumpur day</span></div>
+          <div class="power-note">Glowing lines show electricity flowing to active appliances</div>
+        </div>
+
+        <div class="appliance-header">
+          <div>
+            <p class="eyebrow">APPLIANCE DECK</p>
+            <h2>Build your routine</h2>
+            <p class="deck-order">Fixed appliance order — cards stay in place while you adjust them.</p>
+          </div>
+          <div class="preset-row" aria-label="Household presets">
+            <button data-preset="careful" type="button">Careful</button>
+            <button data-preset="wfh" type="button">Work from home</button>
+            <button data-preset="hot" type="button">Hot month</button>
+          </div>
+        </div>
+        <section class="scenario-planner" aria-labelledby="scenarioTitle">
+          <div>
+            <p class="eyebrow">SCENARIO COMPARISON</p>
+            <h2 id="scenarioTitle">Save a household plan</h2>
+          </div>
+          <div class="scenario-controls">
+            <label><span>Scenario name</span><input id="scenarioName" type="text" maxlength="40" placeholder="Current home"></label>
+            <button id="scenarioSave" type="button">Save current</button>
+            <label><span>Compare with</span><select id="scenarioSelect"><option value="">No saved scenario</option></select></label>
+            <button id="scenarioLoad" type="button" disabled>Load</button>
+            <button id="scenarioDelete" type="button" disabled>Delete</button>
+          </div>
+          <p id="scenarioComparison" aria-live="polite">Save a setup to compare its monthly kWh and bill with later changes.</p>
+        </section>
+        <div class="appliance-grid" id="applianceGrid"></div>
+      </section>
+
+      <aside class="bill-panel" aria-labelledby="billTitle">
+        <div class="bill-topline">
+          <div>
+            <p class="eyebrow">ESTIMATED MONTHLY BILL</p>
+            <p class="bill-note">Domestic General · RP4</p>
+          </div>
+          <span class="status-badge" id="protectionBadge">Protected</span>
+        </div>
+
+        <div class="bill-amount"><span>RM</span><strong id="billTotal">0.00</strong></div>
+        <div class="bill-delta" id="billDelta">Make a change to compare</div>
+
+        <div class="meter-block">
+          <div class="meter-labels"><span><b id="kwhTotal">0</b> kWh / month</span><span id="thresholdText">800 kWh protection</span></div>
+          <div class="meter-track"><div class="meter-fill" id="meterFill"></div><i class="threshold-mark" aria-hidden="true"></i></div>
+        </div>
+
+        <div class="score-card">
+          <div class="score-ring" id="scoreRing"><span id="scoreValue">0</span><small>/100</small></div>
+          <div><p class="eyebrow">HOUSE SCORE</p><h2 id="scoreTitle">Finding your baseline</h2><p id="scoreCopy">Small routine changes can keep you below the costly thresholds.</p></div>
+        </div>
+
+        <section class="calibration-card" aria-labelledby="calibrationTitle">
+          <div class="section-title"><div><p class="eyebrow">REAL BILL CHECK</p><h2 id="calibrationTitle">Calibrate against your bill</h2></div></div>
+          <div class="calibration-inputs">
+            <label><span>Actual usage</span><input id="actualKwh" type="number" min="0" step="1" placeholder="kWh"></label>
+            <label><span>Actual bill</span><input id="actualBill" type="number" min="0" step="0.01" placeholder="RM"></label>
+            <label><span>Billing days</span><input id="actualDays" type="number" min="1" max="45" step="1" value="30"></label>
+          </div>
+          <p id="calibrationResult" aria-live="polite">Enter a real bill to see how closely your configured home matches it.</p>
+        </section>
+
+        <section class="breakdown" aria-labelledby="billTitle">
+          <div class="section-title"><h2 id="billTitle">How the bill adds up</h2><button id="infoToggle" type="button" aria-expanded="false">How it works</button></div>
+          <div class="formula-note" id="formulaNote" hidden>Each card converts its everyday input—hours, showers, loads, sessions, distance or energy-label kWh—into monthly energy. The basic model is rated watts × operating factor × usage × quantity. A product's annual-kWh label overrides that estimate. The tariff applies to the whole month's kWh, not appliance-by-appliance. A RM5 minimum monthly charge is retained even at extremely low usage.</div>
+          <dl id="billLines"></dl>
+          <div class="total-row"><span>Estimated current charge</span><b id="billTotalBottom">RM 0.00</b></div>
+        </section>
+
+        <section class="fuel-lab" aria-labelledby="fuelTitle">
+          <div class="section-title"><div><p class="eyebrow">FUEL PRICE LAB</p><h2 id="fuelTitle">Test the AFA effect</h2></div><span class="live-chip">SEP ACTUAL</span></div>
+          <div class="afa-control">
+            <div><label for="afaSlider">AFA rate</label><strong id="afaValue">+3.67 sen/kWh</strong></div>
+            <input id="afaSlider" type="range" min="-10" max="10" step="0.01" value="3.67">
+            <div class="range-labels"><span>−10 rebate</span><button id="afaReset" type="button">Reset to Sep</button><span>+10 surcharge</span></div>
+          </div>
+          <div class="fuel-grid">
+            <a href="https://paultan.org/2026/09/02/tnb-afa-rate-september-2026-set-at-3-67-sen-kwh/" target="_blank" rel="noreferrer"><span>Malaysia Tier 2 gas</span><b>RM57.87</b><small>/MMBtu · Sep AFA input</small></a>
+            <a href="https://lnginsights.com/" target="_blank" rel="noreferrer"><span>Asia spot LNG (JKM)</span><b>US$26.19</b><small>/MMBtu · 21 Sep 2026</small></a>
+            <a href="https://paultan.org/2026/09/02/tnb-afa-rate-september-2026-set-at-3-67-sen-kwh/" target="_blank" rel="noreferrer"><span>Coal</span><b>US$122.85</b><small>/tonne · Sep input</small></a>
+            <a href="https://paultan.org/2026/09/02/tnb-afa-rate-september-2026-set-at-3-67-sen-kwh/" target="_blank" rel="noreferrer"><span>RM / US$</span><b>4.0944</b><small>Sep AFA input</small></a>
+          </div>
+          <p class="fuel-disclaimer">AFA is officially calculated from the full generation mix, PPAs, fuel costs and foreign exchange—not from one gas benchmark. The slider is a what-if tool.</p>
+        </section>
+
+        <section class="coach-card">
+          <p class="eyebrow">BEST NEXT MOVE</p>
+          <h2 id="coachTitle">Loading suggestion…</h2>
+          <p id="coachCopy"></p>
+        </section>
+
+        <footer>
+          <p>Educational estimate for a normal monthly billing cycle in Peninsular Malaysia. Not an official TNB bill.</p>
+          <div><a href="https://myenergystats.st.gov.my/documents/d/guest/tariff-tnb-pdf-1" target="_blank" rel="noreferrer">Official tariff</a><a href="https://www.mof.gov.my/portal/en/news/press-citations/electricity-bill-protection-for-domestic-users-expanded-to-800-kwh-pm-anwar" target="_blank" rel="noreferrer">800 kWh protection</a><a href="https://www.melp.my/sites/default/files/2025-09/Tariff-Literacy.pdf" target="_blank" rel="noreferrer">Efficiency rates</a></div>
+        </footer>
+      </aside>
+    </main>
+  </div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
