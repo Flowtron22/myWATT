@@ -109,6 +109,8 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer;
 .appliance-note { margin: 8px 0 0; color: #b6c7bf; font-size: .62rem; line-height: 1.35; }
 .product-options { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: end; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 .product-options.single-option { grid-template-columns: 1fr; }
+.product-options.has-secondary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.product-options.has-secondary .rating-control { grid-column: 1 / -1; }
 .variant-control label, .rating-control > span { display: block; color: var(--muted); font-size: .62rem; margin-bottom: 4px; }
 .variant-control select { width: 100%; appearance: none; color: var(--cream); border: 1px solid var(--line); border-radius: 8px; background: #17372e; padding: 7px 25px 7px 8px; font-size: .7rem; cursor: pointer; background-image: linear-gradient(45deg,transparent 50%,var(--yellow) 50%),linear-gradient(135deg,var(--yellow) 50%,transparent 50%); background-position: calc(100% - 12px) 11px,calc(100% - 8px) 11px; background-size:4px 4px,4px 4px; background-repeat:no-repeat; }
 .stars { display: flex; gap: 1px; }

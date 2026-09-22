@@ -6,7 +6,7 @@ const defaultAfa = 3.67;
 
 const defaults = [
   { id: 'homebase', name: 'House idle load', icon: '⌂', watts: 28, hours: 24, qty: 1, duty: 1, on: true, alwaysOn: true, awayOn: true, start: 0, room: 'Whole house', note: 'Small standby loads left connected' },
-  { id: 'aircon', name: 'Air conditioner', icon: '❄', watts: 1050, hours: 8, qty: 1, duty: 0.72, on: true, start: 22, room: 'Bedroom', variant: '1.5 HP', stars: 5, variants: [{ label:'1.0 HP', watts:720 },{ label:'1.5 HP', watts:1050 },{ label:'2.0 HP', watts:1450 },{ label:'2.5 HP', watts:1850 },{ label:'3.0 HP', watts:2300 }] },
+  { id: 'aircon', name: 'Air conditioner', icon: '❄', watts: 1050, hours: 8, qty: 1, duty: 0.68, on: true, start: 22, room: 'Bedroom', variant: '1.5 HP', stars: 5, variants: [{ label:'1.0 HP', watts:720 },{ label:'1.5 HP', watts:1050 },{ label:'2.0 HP', watts:1450 },{ label:'2.5 HP', watts:1850 },{ label:'3.0 HP', watts:2300 }], secondaryVariant: 'Inverter', secondaryVariantLabel: 'Compressor type', secondaryVariants: [{ label:'Inverter', duty:.68 },{ label:'Non-inverter', duty:.85 }], note: 'Inverter units vary compressor speed after the room cools. Non-inverter units repeatedly run at full speed and stop. Actual savings depend on room size, temperature and the model’s energy label.' },
   { id: 'fridge', name: 'Refrigerator', icon: '▥', watts: 150, hours: 24, qty: 1, duty: 0.38, on: true, awayOn: true, start: 0, room: 'Kitchen', variant: '2-door · 300L', variantLabel: 'Fridge type', stars: 4, variants: [{ label:'Mini bar · 90L', watts:70 },{ label:'1-door · 180L', watts:105 },{ label:'2-door · 300L', watts:150 },{ label:'4-door · 500L', watts:240 },{ label:'Side-by-side · 600L', watts:270 }] },
   { id: 'waterpurifier', name: 'Water purifier / dispenser', icon: '◈', watts: 500, hours: 24, qty: 1, duty: .18, on: true, awayOn: true, start: 0, room: 'Kitchen', variant: 'Hot + cold storage dispenser', variantLabel: 'Which kind do you own?', variants: [{ label:'Basic tap / under-sink filter', watts:0, duty:0 },{ label:'Room-temperature purifier', watts:10, duty:.5 },{ label:'Cold + room dispenser', watts:120, duty:.25 },{ label:'Hot + cold storage dispenser', watts:500, duty:.18 },{ label:'Instant-heating hot + cold', watts:2600, duty:.025 },{ label:'Alkaline water ionizer', watts:130, duty:.01 }], note: 'Choose hot + cold storage if the unit keeps tanks of water ready all day. Choose instant-heating if it heats only when you dispense. Basic filters may use no mains electricity.' },
   { id: 'freezer', name: 'Freezer', icon: '▤', watts: 160, hours: 24, qty: 1, duty: 0.42, on: false, awayOn: true, start: 0, room: 'Kitchen', variant: 'Chest · 300L', variantLabel: 'Freezer type', stars: 4, variants: [{ label:'Chest · 150L', watts:110 },{ label:'Chest · 300L', watts:160 },{ label:'Upright · 250L', watts:185 },{ label:'Upright · 400L', watts:240 }] },
@@ -53,6 +53,13 @@ function selectVariant(a, label) {
   const variant = a.variants?.find(v => v.label === label);
   if (!variant) return false;
   a.variant = label;
+  if (variant.duty !== undefined) a.duty = variant.duty;
+  return true;
+}
+function selectSecondaryVariant(a, label) {
+  const variant = a.secondaryVariants?.find(v => v.label === label);
+  if (!variant) return false;
+  a.secondaryVariant = label;
   if (variant.duty !== undefined) a.duty = variant.duty;
   return true;
 }
@@ -128,22 +135,30 @@ function renderAppliances() {
             ${[1,2,3,4,5].map(star => `<button class="star-button ${star <= a.stars ? 'filled' : ''}" type="button" data-action="stars" data-id="${a.id}" data-stars="${star}" aria-label="Set ${star} star rating" aria-pressed="${star === a.stars}">★</button>`).join('')}
           </div>
         </div>` : '';
+    const secondaryControl = a.secondaryVariants ? `
+        <div class="variant-control">
+          <label for="secondary-variant-${a.id}">${a.secondaryVariantLabel || 'Type'}</label>
+          <select id="secondary-variant-${a.id}" data-action="secondary-variant" data-id="${a.id}" aria-label="${a.name} ${a.secondaryVariantLabel || 'type'}">
+            ${a.secondaryVariants.map(v => `<option value="${v.label}" ${v.label === a.secondaryVariant ? 'selected' : ''}>${v.label}</option>`).join('')}
+          </select>
+        </div>` : '';
     const shoppingOptions = a.variants ? `
-      <div class="product-options ${a.stars ? '' : 'single-option'}">
+      <div class="product-options ${a.stars ? '' : 'single-option'} ${a.secondaryVariants ? 'has-secondary' : ''}">
         <div class="variant-control">
           <label for="variant-${a.id}">${a.variantLabel || (a.id === 'aircon' ? 'Cooling size' : 'Screen size')}</label>
           <select id="variant-${a.id}" data-action="variant" data-id="${a.id}" aria-label="${a.name} size">
             ${a.variants.map(v => `<option value="${v.label}" ${v.label === a.variant ? 'selected' : ''}>${v.label}</option>`).join('')}
           </select>
         </div>
+        ${secondaryControl}
         ${ratingControl}
-        <p class="watt-explain">Estimated input: <b>${estimatedWatts.toLocaleString()} W</b>${a.stars ? '. Star impact is an educational estimate; check the product energy label for its tested kWh.' : '.'}</p>
+        <p class="watt-explain">${a.secondaryVariants ? 'Estimated rated input' : 'Estimated input'}: <b>${estimatedWatts.toLocaleString()} W</b>${a.secondaryVariants ? `. Modelled average compressor load while cooling: <b>${Math.round(a.duty * 100)}%</b>` : ''}${a.stars ? '. Star impact is an educational estimate; check the product energy label for its tested kWh.' : '.'}</p>
       </div>` : '';
     return `
     <article class="appliance-card ${a.on ? 'on' : ''} ${a.alwaysOn ? 'always-on' : ''}" data-card="${a.id}">
       <div class="appliance-top">
         <span class="appliance-icon" aria-hidden="true">${a.icon}</span>
-        <div class="appliance-name"><b>${a.name}</b><small>${a.variant ? `${a.variant} · ` : ''}${estimatedWatts.toLocaleString()} W · ${a.on ? '' : 'OFF · '}≈${monthlyKwh.toFixed(monthlyKwh < 10 ? 1 : 0)} kWh/mo</small></div>
+        <div class="appliance-name"><b>${a.name}</b><small>${[a.variant, a.secondaryVariant].filter(Boolean).join(' · ')}${a.variant || a.secondaryVariant ? ' · ' : ''}${estimatedWatts.toLocaleString()} W · ${a.on ? '' : 'OFF · '}≈${monthlyKwh.toFixed(monthlyKwh < 10 ? 1 : 0)} kWh/mo</small></div>
         ${a.alwaysOn ? '<span class="always-badge">BASE</span>' : `<button class="switch" type="button" data-action="toggle" data-id="${a.id}" aria-label="${a.on ? 'Switch off' : 'Switch on'} ${a.name}" aria-pressed="${a.on}"></button>`}
       </div>
       <div class="appliance-controls">
@@ -229,6 +244,7 @@ grid.addEventListener('input', (event) => {
 grid.addEventListener('change', (event) => {
   const id = event.target.dataset.id;
   if (event.target.dataset.action === 'variant') mutateAppliance(id, a => selectVariant(a, event.target.value));
+  if (event.target.dataset.action === 'secondary-variant') mutateAppliance(id, a => selectSecondaryVariant(a, event.target.value));
 });
 grid.addEventListener('click', (event) => {
   const button = event.target.closest('button[data-action]');
@@ -471,12 +487,12 @@ function registerWebMcp() {
   const tool={
     name:'configure_household_energy', title:'Configure household energy',
     description:'Set appliance usage, product size and energy-star rating in the visible RumahWatt simulation and return the updated monthly kWh and Malaysian bill estimate.',
-    inputSchema:{type:'object',properties:{appliances:{type:'array',items:{type:'object',properties:{id:{type:'string'},hoursPerDay:{type:'number',minimum:0,maximum:24},quantity:{type:'integer',minimum:1,maximum:24},enabled:{type:'boolean'},variant:{type:'string'},stars:{type:'integer',minimum:1,maximum:5}},required:['id'],additionalProperties:false}},afaSenPerKwh:{type:'number',minimum:-10,maximum:10}},additionalProperties:false},
+    inputSchema:{type:'object',properties:{appliances:{type:'array',items:{type:'object',properties:{id:{type:'string'},hoursPerDay:{type:'number',minimum:0,maximum:24},quantity:{type:'integer',minimum:1,maximum:24},enabled:{type:'boolean'},variant:{type:'string'},compressorType:{type:'string'},stars:{type:'integer',minimum:1,maximum:5}},required:['id'],additionalProperties:false}},afaSenPerKwh:{type:'number',minimum:-10,maximum:10}},additionalProperties:false},
     annotations:{readOnlyHint:false,untrustedContentHint:false},
     execute(input){
       if(!input || typeof input!=='object') throw new Error('Input must be an object.');
       if(input.afaSenPerKwh!==undefined){ if(!Number.isFinite(input.afaSenPerKwh)||input.afaSenPerKwh < -10||input.afaSenPerKwh > 10) throw new Error('AFA must be between -10 and 10 sen/kWh.'); afaRate=input.afaSenPerKwh; $('#afaSlider').value=afaRate; updateAfaLabel(); }
-      if(input.appliances){ for(const update of input.appliances){ const a=appliances.find(x=>x.id===update.id); if(!a) throw new Error(`Unknown appliance id: ${update.id}`); if(a.alwaysOn && update.enabled===false) throw new Error(`${a.name} represents the unavoidable connected-home baseline and cannot be switched off.`); if(update.hoursPerDay!==undefined) a.hours=update.hoursPerDay; if(update.quantity!==undefined) a.qty=update.quantity; if(update.enabled!==undefined) a.on=update.enabled; if(update.stars!==undefined){ if(!a.stars) throw new Error(`${a.name} does not use the star-rating control.`); a.stars=update.stars; } if(update.variant!==undefined && !selectVariant(a, update.variant)) throw new Error(`Unknown ${a.name} variant: ${update.variant}`); } }
+      if(input.appliances){ for(const update of input.appliances){ const a=appliances.find(x=>x.id===update.id); if(!a) throw new Error(`Unknown appliance id: ${update.id}`); if(a.alwaysOn && update.enabled===false) throw new Error(`${a.name} represents the unavoidable connected-home baseline and cannot be switched off.`); if(update.hoursPerDay!==undefined) a.hours=update.hoursPerDay; if(update.quantity!==undefined) a.qty=update.quantity; if(update.enabled!==undefined) a.on=update.enabled; if(update.stars!==undefined){ if(!a.stars) throw new Error(`${a.name} does not use the star-rating control.`); a.stars=update.stars; } if(update.variant!==undefined && !selectVariant(a, update.variant)) throw new Error(`Unknown ${a.name} variant: ${update.variant}`); if(update.compressorType!==undefined && !selectSecondaryVariant(a, update.compressorType)) throw new Error(`Unknown ${a.name} compressor type: ${update.compressorType}`); } }
       renderAppliances(); updateBill(true); const bill=calculateBill(); return {monthlyKwh:Number(bill.kwh.toFixed(1)),estimatedBillRm:Number(bill.total.toFixed(2)),protected:bill.protectedUser};
     }
   };
