@@ -84,6 +84,7 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer;
 .power-note { position: absolute; left: 17px; bottom: 15px; color: #b8c9c1; font-size: .66rem; background: rgba(7,22,18,.68); border-radius: 9px; padding: 7px 9px; backdrop-filter: blur(8px); }
 .appliance-header { margin: 28px 0 14px; }
 .appliance-header h2 { font-size: 1.2rem; }
+.deck-order { margin: 4px 0 0; color: var(--muted); font-size: .65rem; }
 .preset-row { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
 .preset-row button { border: 1px solid var(--line); background: transparent; color: var(--cream); border-radius: 999px; padding: 7px 10px; font-size: .72rem; cursor: pointer; }
 .preset-row button:hover { background: rgba(255,255,255,.08); }

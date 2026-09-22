@@ -8,6 +8,7 @@ const defaults = [
   { id: 'homebase', name: 'House idle load', icon: '⌂', watts: 28, hours: 24, qty: 1, duty: 1, on: true, alwaysOn: true, awayOn: true, start: 0, room: 'Whole house', note: 'Small standby loads left connected' },
   { id: 'aircon', name: 'Air conditioner', icon: '❄', watts: 1050, hours: 8, qty: 1, duty: 0.72, on: true, start: 22, room: 'Bedroom', variant: '1.5 HP', stars: 5, variants: [{ label:'1.0 HP', watts:720 },{ label:'1.5 HP', watts:1050 },{ label:'2.0 HP', watts:1450 },{ label:'2.5 HP', watts:1850 },{ label:'3.0 HP', watts:2300 }] },
   { id: 'fridge', name: 'Refrigerator', icon: '▥', watts: 150, hours: 24, qty: 1, duty: 0.38, on: true, awayOn: true, start: 0, room: 'Kitchen', variant: '2-door · 300L', variantLabel: 'Fridge type', stars: 4, variants: [{ label:'Mini bar · 90L', watts:70 },{ label:'1-door · 180L', watts:105 },{ label:'2-door · 300L', watts:150 },{ label:'4-door · 500L', watts:240 },{ label:'Side-by-side · 600L', watts:270 }] },
+  { id: 'waterpurifier', name: 'Water purifier / dispenser', icon: '◈', watts: 500, hours: 24, qty: 1, duty: .18, on: true, awayOn: true, start: 0, room: 'Kitchen', variant: 'Hot + cold tank', variantLabel: 'Purifier type', variants: [{ label:'Faucet / under-sink filter', watts:0, duty:0 },{ label:'Ambient electric purifier', watts:10, duty:.5 },{ label:'Cold-water dispenser', watts:120, duty:.25 },{ label:'Hot + cold tank', watts:500, duty:.18 },{ label:'Instant hot + cold', watts:2600, duty:.025 },{ label:'Alkaline ionizer', watts:130, duty:.01 }], note: 'Hot tanks and compressors cycle all day. Instant-hot units have a high peak but heat only while dispensing; basic filters may use no mains electricity.' },
   { id: 'freezer', name: 'Freezer', icon: '▤', watts: 160, hours: 24, qty: 1, duty: 0.42, on: false, awayOn: true, start: 0, room: 'Kitchen', variant: 'Chest · 300L', variantLabel: 'Freezer type', stars: 4, variants: [{ label:'Chest · 150L', watts:110 },{ label:'Chest · 300L', watts:160 },{ label:'Upright · 250L', watts:185 },{ label:'Upright · 400L', watts:240 }] },
   { id: 'heater', name: 'Water heater', icon: '♨', watts: 3600, hours: 0.6, qty: 1, duty: 1, on: true, start: 7, end: 8, room: 'Bathroom', variant: 'Instant shower · no pump', variantLabel: 'Heater type', variants: [{ label:'Instant shower · no pump', watts:3600, duty:1 },{ label:'Instant shower · with pump', watts:3650, duty:1 },{ label:'Instant high-flow · 5.5 kW', watts:5500, duty:1 },{ label:'Storage tank · 20L', watts:2500, duty:.55 },{ label:'Storage tank · 30–90L', watts:3000, duty:.45 }], note: 'Instant heaters draw full power while water flows. Storage heaters cycle on and off; the estimate includes typical thermostat cycling.' },
   { id: 'washer', name: 'Washing machine', icon: '◉', watts: 500, hours: 0.75, qty: 1, duty: .65, on: true, start: 11, end: 12, room: 'Yard', variant: 'Top load · 8–10kg', variantLabel: 'Washer & cycle', variants: [{ label:'Top load · 8–10kg', watts:500, duty:.65 },{ label:'Top load · 11–14kg', watts:650, duty:.65 },{ label:'Front load · cold wash', watts:500, duty:.55 },{ label:'Front load · warm wash', watts:2000, duty:.28 },{ label:'Front load · steam/hot', watts:2200, duty:.32 }], note: 'Cold front-load cycles usually use less electricity; warm, steam and hot cycles use an internal heater and can use much more.' },
@@ -45,7 +46,7 @@ const currency = (n) => `RM ${Math.abs(n).toFixed(2)}`;
 const starMultipliers = { 1: 1.18, 2: 1.09, 3: 1, 4: .91, 5: .82 };
 
 function wattsFor(a) {
-  const base = a.variants ? (a.variants.find(v => v.label === a.variant)?.watts || a.watts) : a.watts;
+  const base = a.variants ? (a.variants.find(v => v.label === a.variant)?.watts ?? a.watts) : a.watts;
   return Math.round(base * (a.stars ? starMultipliers[a.stars] : 1));
 }
 function selectVariant(a, label) {
@@ -87,6 +88,13 @@ function calculateBill(kwh = monthlyKwh()) {
 }
 
 function applianceKwh(a) { return a.on ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * usageDaysFor(a) : 0; }
+function sortAppliancesByEnergy(items) {
+  return [...items].sort((a, b) => {
+    const continuousDifference = Number(b.hours >= 23.9) - Number(a.hours >= 23.9);
+    if (continuousDifference) return continuousDifference;
+    return applianceKwh(b) - applianceKwh(a);
+  });
+}
 function holidayBackgroundKwh() {
   const holidayDays = daysPerMonth - daysAtHome;
   return appliances.reduce((sum, a) => sum + (a.on && a.awayOn ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * holidayDays : 0), 0);
@@ -102,7 +110,7 @@ function updateSimulationPanel() {
   $('#runBill').textContent = currency(calculateBill(shownKwh).total);
   $('#runState').textContent = daysAtHome === 0 ? 'HOLIDAY' : runComplete ? 'COMPLETE' : playing ? 'RUNNING' : 'READY';
   $('#homeDaysValue').textContent = daysAtHome;
-  $('#holidayNote').textContent = holidayDays ? `${holidayDays} holiday day${holidayDays === 1 ? '' : 's'}: only fridge, freezer, router and background loads continue.` : 'No holiday days in this billing month.';
+  $('#holidayNote').textContent = holidayDays ? `${holidayDays} holiday day${holidayDays === 1 ? '' : 's'}: fridge, freezer, water purifier, router and background loads continue if left on.` : 'No holiday days in this billing month.';
 }
 function resetSimulation(resetClock = true) {
   playing = false;
@@ -117,7 +125,7 @@ function resetSimulation(resetClock = true) {
 }
 
 function renderAppliances() {
-  grid.innerHTML = appliances.map(a => {
+  grid.innerHTML = sortAppliancesByEnergy(appliances).map(a => {
     const estimatedWatts = wattsFor(a);
     const monthlyKwh = (estimatedWatts / 1000) * a.hours * a.qty * a.duty * usageDaysFor(a);
     const ratingControl = a.stars ? `
@@ -327,6 +335,7 @@ const freezer = box(1.25,.8,.9,0xcddbd5,-4.0,.5,-3.15,'freezer',0x78d9ff); appli
 const rice = box(.65,.6,.65,0xf0eee5,-2.8,.92,-3.15,'rice',0xf4c84a); applianceMeshes.set('rice', rice);
 const kettle = box(.42,.62,.42,0x25362f,-1.75,.92,-3.15,'kettle',0xff7a3d); applianceMeshes.set('kettle', kettle);
 const microwave = box(.8,.48,.52,0x2e4039,-.85,.9,-3.15,'microwave',0xff7a3d); applianceMeshes.set('microwave', microwave);
+const waterpurifier = box(.48,.9,.46,0xe7f0e9,-3.95,1.32,-3.15,'waterpurifier',0x78d9ff); applianceMeshes.set('waterpurifier', waterpurifier);
 const oven = box(.9,1.0,.7,0x27362f,-1.3,.54,-2.0,'oven',0xff7a3d); applianceMeshes.set('oven', oven);
 const hood = box(1.4,.25,.62,0xb9c9c1,-2.3,1.75,-3.1,'hood',0xf4c84a); applianceMeshes.set('hood', hood);
 box(2.3,.7,.65,0x3c5b51,3,.45,-3.25); // desk
