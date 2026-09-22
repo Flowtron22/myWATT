@@ -10,6 +10,7 @@ myWATT??? is an educational household electricity planning sandbox by Ureka Game
 
 ## Mobile household builder
 
+- Refresh the WhatsApp and social-sharing preview with the new myWATT??? artwork.
 - Remove appliances that are not part of the household without losing their previous settings.
 - Add appliances back from a categorized catalogue.
 - Keep duplicated units separate while letting them be removed directly.
