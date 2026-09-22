@@ -182,9 +182,8 @@ function calculateBill(kwh = monthlyKwh(), useTou = touEnabled, splitOverride = 
   const taxableShare = protectedUser ? 0 : Math.max(0, kwh - protectionThreshold) / kwh;
   const sst = protectedUser ? 0 : ((kwhChargesAfterDiscount + afa) * taxableShare + retail) * .08;
   const subtotal = energy + capacity + network + afa + retail - incentive + kwtbb + sst;
-  const minimumAdjustment = Math.max(0, 5 - subtotal);
-  const total = Math.max(5, subtotal);
-  return { kwh, generationRate, generalRate, peakRate, offpeakRate, peakKwh:split.peakKwh, offpeakKwh:split.offpeakKwh, useTou, energy, capacity, network, incentive, afa, retail, kwtbb, sst, subtotal, minimumAdjustment, total, protectedUser };
+  const total = Math.max(0, subtotal);
+  return { kwh, generationRate, generalRate, peakRate, offpeakRate, peakKwh:split.peakKwh, offpeakKwh:split.offpeakKwh, useTou, energy, capacity, network, incentive, afa, retail, kwtbb, sst, subtotal, total, protectedUser };
 }
 
 function applianceKwh(a) { return applianceEnergyForDays(a); }
@@ -390,8 +389,7 @@ function updateBill(announce = false) {
     addBillLine('Automatic Fuel Adjustment', b.protectedUser ? `Exempt under current ${protectionThreshold} kWh protection` : `${afaRate >= 0 ? '+' : ''}${afaRate.toFixed(2)} sen × ${b.kwh.toFixed(1)} kWh`, Math.abs(b.afa), b.afa < 0),
     addBillLine('Retail charge', b.protectedUser ? 'Exempt under current protection' : 'Fixed monthly charge', b.retail),
     addBillLine('Renewable Energy Fund', b.kwh <= 300 ? 'Exempt at 300 kWh and below' : '1.6% of eligible usage charges', b.kwtbb),
-    addBillLine('Service tax', b.protectedUser ? 'Exempt under current protection' : '8% on estimated taxable portion', b.sst),
-    ...(b.minimumAdjustment > 0 ? [addBillLine('Minimum monthly charge', 'Domestic tariff minimum: RM5.00', b.minimumAdjustment)] : [])
+    addBillLine('Service tax', b.protectedUser ? 'Exempt under current protection' : '8% on estimated taxable portion', b.sst)
   ].join('');
 
   const score = Math.max(8, Math.round(100 - Math.max(0, b.kwh - 250) * .085 - Math.max(0, b.total - 120) * .045));
@@ -408,7 +406,7 @@ function updateBill(announce = false) {
     $('#coachCopy').textContent = `Your biggest load uses about ${applianceKwh(top).toFixed(0)} kWh/month. One hour less per day removes roughly ${oneHour.toFixed(0)} kWh before tariff effects.`;
   } else {
     $('#coachTitle').textContent = 'Only the connected-home baseline remains';
-    $('#coachCopy').textContent = 'The estimate stays at the RM5 domestic minimum charge even when every optional appliance is switched off.';
+    $('#coachCopy').textContent = 'The always-on house idle load is the only remaining estimated usage.';
   }
   updateScenarioComparison(b);
   updateCalibration(b);

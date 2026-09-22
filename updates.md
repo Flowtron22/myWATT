@@ -6,7 +6,7 @@ Repository: https://github.com/Flowtron22/myWATT
 
 ## Current release
 
-myWATT??? is an educational household electricity planning sandbox by Ureka Games for Peninsular Malaysia. It estimates monthly energy use and the current charge using the RP4 domestic tariff model, September 2026 AFA input, applicable protection rules, and a RM5 minimum monthly charge.
+myWATT??? is an educational household electricity planning sandbox by Ureka Games for Peninsular Malaysia. It estimates monthly energy use and the current charge using the RP4 domestic tariff model, September 2026 AFA input, and applicable protection rules.
 
 ## Mobile household builder
 
@@ -30,6 +30,8 @@ The estimate is for planning and comparison. It is not an official TNB bill.
 
 ## Planning and simulation
 
+- Remove the unsupported RM5 minimum-charge assumption from calculations and bill explanations.
+- Rename the main simulator heading to “what's your watt???” and trim two more redundant helper labels.
 - Simplify the main workspace by removing repeated helper copy from the hero, simulation, appliance, scenario, and ToU areas.
 - Show air-conditioner room floor area in square feet and automatically convert room sizes in older saved scenarios.
 - Remove the advanced label-watts and annual-kWh override fields so appliance setup stays approachable.

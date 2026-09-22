@@ -41,7 +41,7 @@
       <section class="house-panel" aria-labelledby="houseTitle">
         <div class="scene-heading">
           <div>
-            <h1 id="houseTitle">Every switch changes the bill.</h1>
+            <h1 id="houseTitle">what's your watt???</h1>
           </div>
           <div class="day-controls" aria-label="Day simulation controls">
             <div class="play-wrap">
@@ -71,7 +71,7 @@
             <div class="run-progress"><i id="runProgress"></i></div>
             <div class="run-metrics">
               <div><span>Energy so far</span><b id="runKwh">0.0 kWh</b></div>
-              <div><span>Running bill</span><b id="runBill">RM 5.00</b></div>
+              <div><span>Running bill</span><b id="runBill">RM 0.00</b></div>
             </div>
             <label class="occupancy-control" for="homeDays"><span>Days at home</span><b><em id="homeDaysValue">30</em> days</b></label>
             <input id="homeDays" type="range" min="0" max="30" step="1" value="30">
@@ -79,7 +79,6 @@
             <button id="runReset" type="button">Reset simulation</button>
           </section>
           <div class="weather-pill"><b>32°C</b><span>Kuala Lumpur day</span></div>
-          <div class="power-note">Glowing lines show electricity flowing to active appliances</div>
         </div>
 
         <div class="appliance-header">
@@ -108,7 +107,7 @@
           <p id="scenarioComparison" aria-live="polite" hidden></p>
         </section>
         <div class="deck-tools">
-          <p><b id="includedCount">0 appliances in your home</b><span>Remove anything you do not own. You can add it back later.</span></p>
+          <p><b id="includedCount">0 appliances in your home</b></p>
           <button class="add-appliance-button" id="addApplianceButton" type="button"><span>＋</span> Add appliance <b id="availableCount"></b></button>
         </div>
         <div class="appliance-grid" id="applianceGrid"></div>
@@ -164,7 +163,7 @@
 
         <section class="breakdown" aria-labelledby="billTitle">
           <div class="section-title"><h2 id="billTitle">How the bill adds up</h2><button id="infoToggle" type="button" aria-expanded="false">How it works</button></div>
-          <div class="formula-note" id="formulaNote" hidden>Each card converts its everyday input—hours, showers, loads, sessions or distance—into monthly energy. The basic model is rated watts × operating factor × usage × quantity. In ToU mode, the typical start time splits energy between weekday peak and off-peak rates; weekends are treated as off-peak. Other tariff components apply to the whole month's kWh. A RM5 minimum monthly charge is retained even at extremely low usage.</div>
+          <div class="formula-note" id="formulaNote" hidden>Each card converts its everyday input—hours, showers, loads, sessions or distance—into monthly energy. The basic model is rated watts × operating factor × usage × quantity. In ToU mode, the typical start time splits energy between weekday peak and off-peak rates; weekends are treated as off-peak. Other tariff components apply to the whole month's kWh.</div>
           <dl id="billLines"></dl>
           <div class="total-row"><span>Estimated current charge</span><b id="billTotalBottom">RM 0.00</b></div>
         </section>
