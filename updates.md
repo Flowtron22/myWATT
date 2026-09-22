@@ -1,6 +1,6 @@
 # myWATT??? updates
 
-Last updated: 22 September 2026
+Last updated: 23 September 2026
 
 Repository: https://github.com/Flowtron22/myWATT
 
@@ -43,12 +43,22 @@ The estimate is for planning and comparison. It is not an official TNB bill.
 - Compare the estimate with a real bill using actual kWh, amount paid, and billing days.
 - Apply the Careful, Work from home, and Hot month presets as starting points.
 
+## Accuracy, reliability and performance
+
+- Use one shared calculation model for the monthly estimate, live load, and animated billing run.
+- Respect each appliance's days-per-week schedule during the live simulation and split ToU energy at the exact weekday peak boundary.
+- Limit elapsed animation time after a background-tab pause so returning to the page cannot create an unrealistic usage jump.
+- Pause Three.js rendering while the house scene or browser tab is hidden, then resume without catching up missed time.
+- Keep duplicated appliances linked to the correct house-scene control after units are added or removed.
+- Update appliance hours without rebuilding the full card grid on every slider movement.
+- Show when the temporary 800 kWh protection configuration has expired instead of silently presenting it as current.
+- Add automated tests for tariff thresholds, AFA rebates, schedules, overnight operation, ToU splitting, and rule expiry.
+
 ## Appliance modelling
 
 - Appliance cards stay in a fixed order while settings are changed.
 - Everyday inputs include hours per day, days per week, showers per day, loads or sessions per week, and EV kilometres per month.
 - Individual units can be duplicated and configured separately.
-- Product-label watts or annual kWh can override the built-in estimate.
 - Five-star efficiency choices are available for relevant appliances.
 - Air conditioners include 1.0 to 3.0 HP sizes, inverter and non-inverter compressors, room size, thermostat setting, and star rating.
 - Refrigerators and freezers include common door, capacity, format, and star-rating choices.

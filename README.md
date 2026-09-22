@@ -12,6 +12,15 @@ python -m http.server 8080 --directory dist
 
 Then open `http://localhost:8080`.
 
+## Verify changes
+
+```powershell
+npm test
+npm run check
+```
+
+The test suite covers tariff boundaries, weekly schedules, overnight use, Time of Use splitting, and temporary protection-rule expiry.
+
 ## Deploy on Vercel
 
 Import this GitHub repository into Vercel. The included `vercel.json` sets `dist/` as the static output directory, so the Framework Preset can remain **Other** and no build command is required.

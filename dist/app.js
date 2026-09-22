@@ -1,9 +1,24 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import {
+  applianceEnergyForDays as modelApplianceEnergyForDays,
+  calculateBill as modelCalculateBill,
+  incentiveRate,
+  integrateSimulationInterval,
+  isActiveAtTime as modelIsActiveAtTime,
+  isProtectionConfigCurrent,
+  liveLoadKwAt,
+  monthlyKwh as modelMonthlyKwh,
+  operatingFactor,
+  syncUsageHours,
+  tariffConfig,
+  touEnergySplit as modelTouEnergySplit,
+  wattsFor
+} from './model.js';
 
-const protectionThreshold = 800;
-const daysPerMonth = 30;
-const defaultAfa = 3.67;
-const representativeWeekdays = 22;
+const protectionThreshold = tariffConfig.protection.thresholdKwh;
+const daysPerMonth = tariffConfig.daysPerMonth;
+const defaultAfa = tariffConfig.afa.rateSenPerKwh;
+const representativeWeekdays = tariffConfig.representativeWeekdays;
 
 const defaults = [
   { id: 'homebase', name: 'House idle load', icon: '⌂', watts: 28, hours: 24, qty: 1, duty: 1, on: true, alwaysOn: true, awayOn: true, start: 0, room: 'Whole house', note: 'Small standby loads left connected' },
@@ -73,12 +88,6 @@ const grid = $('#applianceGrid');
 const catalogGroups = $('#catalogGroups');
 const currency = (n) => `RM ${Math.abs(n).toFixed(2)}`;
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
-const starMultipliers = { 1: 1.18, 2: 1.09, 3: 1, 4: .91, 5: .82 };
-
-function wattsFor(a) {
-  const base = a.variants ? (a.variants.find(v => v.label === a.variant)?.watts ?? a.watts) : a.watts;
-  return Math.round(base * (a.stars ? starMultipliers[a.stars] : 1));
-}
 function selectVariant(a, label) {
   const variant = a.variants?.find(v => v.label === label);
   if (!variant) return false;
@@ -98,92 +107,17 @@ function formatHours(hours) {
   return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
 }
 
-function syncUsageHours(a) {
-  if (a.usageMode === 'cycles-per-week') a.hours = Math.min(24, (Number(a.usesPerWeek) || 0) * (Number(a.minutesPerUse) || 0) / 60 / 7);
-  if (a.usageMode === 'uses-per-day') a.hours = Math.min(24, (Number(a.usesPerDay) || 0) * (Number(a.minutesPerUse) || 0) / 60);
-  if (a.usageMode === 'ev-distance') {
-    const energy = (Number(a.kmPerMonth) || 0) * (Number(a.kwhPer100km) || 0) / 100 / Math.max(.5, Number(a.chargingEfficiency) || .9);
-    a.hours = Math.min(24, energy / Math.max(.001, wattsFor(a) / 1000) / daysPerMonth);
-  }
-}
 defaults.forEach(syncUsageHours);
-function operatingFactor(a) {
-  if ((a.templateId || a.id) !== 'aircon') return a.duty;
-  const recommendedAreaSqFt = { '1.0 HP':161, '1.5 HP':237, '2.0 HP':323, '2.5 HP':409, '3.0 HP':484 }[a.variant] || 237;
-  const roomFactor = Math.min(1.3, Math.max(.8, (Number(a.roomAreaSqFt) || recommendedAreaSqFt) / recommendedAreaSqFt));
-  const temperatureFactor = Math.min(1.3, Math.max(.82, 1 + (24 - (Number(a.setpoint) || 24)) * .06));
-  return Math.min(1, a.duty * roomFactor * temperatureFactor);
-}
-
-function incentiveRate(kwh) {
-  const bands = [[200,.25],[250,.245],[300,.225],[350,.21],[400,.17],[450,.145],[500,.12],[550,.105],[600,.09],[650,.075],[700,.055],[750,.045],[800,.04],[850,.025],[900,.01],[1000,.005]];
-  return (bands.find(([max]) => kwh <= max) || [0,0])[1];
-}
-
-function usageDaysFor(a, requestedDays = null) {
-  const baseDays = requestedDays ?? (a.awayOn ? daysPerMonth : daysAtHome);
-  if (a.usageMode || a.hours >= 23.9) return baseDays;
-  return baseDays * Math.min(7, Math.max(1, Number(a.daysPerWeek) || 7)) / 7;
-}
 function applianceEnergyForDays(a, requestedDays = null, includeWhenOff = false) {
-  if ((!a.included || !a.on) && !includeWhenOff) return 0;
-  const activeDays = requestedDays ?? (a.awayOn ? daysPerMonth : daysAtHome);
-  if (a.usageMode === 'ev-distance') {
-    const fullMonth = (Number(a.kmPerMonth) || 0) * (Number(a.kwhPer100km) || 0) / 100 / Math.max(.5, Number(a.chargingEfficiency) || .9) * a.qty;
-    return fullMonth * activeDays / daysPerMonth;
-  }
-  return (wattsFor(a) / 1000) * a.hours * a.qty * operatingFactor(a) * usageDaysFor(a, activeDays);
+  return modelApplianceEnergyForDays(a, { daysAtHome, daysPerMonth }, requestedDays, includeWhenOff);
 }
-function monthlyKwh() { return appliances.reduce((sum, a) => sum + applianceEnergyForDays(a), 0); }
-function overlapHours(start, duration, windowStart, windowEnd) {
-  const normalizedStart = ((Number(start) || 0) % 24 + 24) % 24;
-  const safeDuration = Math.min(24, Math.max(0, Number(duration) || 0));
-  if (safeDuration >= 24) return windowEnd - windowStart;
-  const intervalEnd = normalizedStart + safeDuration;
-  let overlap = 0;
-  for (const offset of [-24, 0, 24]) {
-    const startAt = windowStart + offset;
-    const endAt = windowEnd + offset;
-    overlap += Math.max(0, Math.min(intervalEnd, endAt) - Math.max(normalizedStart, startAt));
-  }
-  return Math.min(safeDuration, overlap);
-}
+function monthlyKwh() { return modelMonthlyKwh(appliances, { daysAtHome, daysPerMonth }); }
 function touEnergySplit(kwhOverride = null) {
-  const totalKwh = monthlyKwh();
-  const weekdayShare = representativeWeekdays / daysPerMonth;
-  const scheduledPeakKwh = appliances.reduce((sum, a) => {
-    const energy = applianceEnergyForDays(a);
-    const duration = Math.min(24, Math.max(0, Number(a.hours) || 0));
-    if (!energy || !duration) return sum;
-    const weekdayPeakShare = overlapHours(a.start, duration, 14, 22) / duration;
-    return sum + energy * weekdayShare * weekdayPeakShare;
-  }, 0);
-  const requestedKwh = kwhOverride === null ? totalKwh : Math.max(0, Number(kwhOverride) || 0);
-  const scale = totalKwh > 0 ? requestedKwh / totalKwh : 0;
-  const peakKwh = Math.min(requestedKwh, scheduledPeakKwh * scale);
-  return { peakKwh, offpeakKwh: Math.max(0, requestedKwh - peakKwh) };
+  return modelTouEnergySplit(appliances, { daysAtHome, daysPerMonth, representativeWeekdays }, kwhOverride);
 }
 function calculateBill(kwh = monthlyKwh(), useTou = touEnabled, splitOverride = null) {
   const split = splitOverride || touEnergySplit(kwh);
-  const highUsage = kwh > 1500;
-  const generalRate = highUsage ? .3703 : .2703;
-  const peakRate = highUsage ? .3852 : .2852;
-  const offpeakRate = highUsage ? .3443 : .2443;
-  const energy = useTou ? split.peakKwh * peakRate + split.offpeakKwh * offpeakRate : kwh * generalRate;
-  const generationRate = kwh ? energy / kwh : (useTou ? offpeakRate : generalRate);
-  const capacity = kwh * .0455;
-  const network = kwh * .1285;
-  const incentive = kwh * incentiveRate(kwh);
-  const protectedUser = kwh <= protectionThreshold;
-  const afa = protectedUser ? 0 : kwh * (afaRate / 100);
-  const retail = protectedUser ? 0 : 10;
-  const kwhChargesAfterDiscount = Math.max(0, energy + capacity + network - incentive);
-  const kwtbb = kwh > 300 ? kwhChargesAfterDiscount * .016 : 0;
-  const taxableShare = protectedUser ? 0 : Math.max(0, kwh - protectionThreshold) / kwh;
-  const sst = protectedUser ? 0 : ((kwhChargesAfterDiscount + afa) * taxableShare + retail) * .08;
-  const subtotal = energy + capacity + network + afa + retail - incentive + kwtbb + sst;
-  const total = Math.max(0, subtotal);
-  return { kwh, generationRate, generalRate, peakRate, offpeakRate, peakKwh:split.peakKwh, offpeakKwh:split.offpeakKwh, useTou, energy, capacity, network, incentive, afa, retail, kwtbb, sst, subtotal, total, protectedUser };
+  return modelCalculateBill({ kwh, useTou, split, afaRate });
 }
 
 function applianceKwh(a) { return applianceEnergyForDays(a); }
@@ -461,7 +395,13 @@ function addApplianceToHome(id) {
 
 grid.addEventListener('input', (event) => {
   const id = event.target.dataset.id;
-  if (event.target.dataset.action === 'hours') mutateAppliance(id, a => a.hours = Number(event.target.value));
+  if (event.target.dataset.action === 'hours') {
+    const a = appliances.find(item => item.id === id); if (!a) return;
+    a.hours = Number(event.target.value);
+    const value = event.target.closest('.hours-control')?.querySelector('b');
+    if (value) value.textContent = `${formatHours(a.hours)}h`;
+    resetSimulation(false); updateBill(true); refreshApplianceSummary(a);
+  }
   if (event.target.dataset.action === 'usage-value') {
     const a = appliances.find(item => item.id === id); if (!a) return;
     a[event.target.dataset.field] = Number(event.target.value); syncUsageHours(a); resetSimulation(false); updateBill(true); refreshApplianceSummary(a);
@@ -542,12 +482,19 @@ $('#scenarioSave').addEventListener('click', () => {
 $('#scenarioSelect').addEventListener('change', () => refreshScenarioSelect($('#scenarioSelect').value));
 $('#scenarioLoad').addEventListener('click', () => {
   const saved = readScenarios().find(s => s.id === $('#scenarioSelect').value); if (!saved) return;
-  appliances = structuredClone(saved.appliances); appliances.forEach(a => {
+  appliances = Array.isArray(saved.appliances) ? structuredClone(saved.appliances) : structuredClone(defaults);
+  defaults.forEach(defaultAppliance => {
+    if (!appliances.some(appliance => appliance.id === defaultAppliance.id)) appliances.push(structuredClone(defaultAppliance));
+  });
+  appliances.forEach(a => {
     if (a.included === undefined) a.included = true;
     if ((a.templateId || a.id) === 'aircon' && !a.roomAreaSqFt) a.roomAreaSqFt = Math.round((Number(a.roomSize) || 22) * 10.7639);
     delete a.roomSize; delete a.customWatts; delete a.customAnnualKwh;
     syncUsageHours(a);
-  }); afaRate = saved.afaRate; touEnabled = Boolean(saved.touEnabled); daysAtHome = saved.daysAtHome;
+  });
+  afaRate = Number.isFinite(saved.afaRate) ? Math.min(10, Math.max(-10, saved.afaRate)) : defaultAfa;
+  touEnabled = Boolean(saved.touEnabled);
+  daysAtHome = Number.isFinite(saved.daysAtHome) ? Math.min(daysPerMonth, Math.max(0, saved.daysAtHome)) : daysPerMonth;
   $('#homeDays').value = daysAtHome; $('#afaSlider').value = afaRate; resetSimulation(); renderAppliances(); updateAfaLabel(); updateBill(true);
 });
 $('#scenarioDelete').addEventListener('click', () => {
@@ -581,6 +528,11 @@ $('#resetButton').addEventListener('click', () => { appliances = structuredClone
 $('#infoToggle').addEventListener('click', () => { const note = $('#formulaNote'); note.hidden = !note.hidden; $('#infoToggle').setAttribute('aria-expanded', String(!note.hidden)); });
 $('#touToggle').addEventListener('click', () => { touEnabled = !touEnabled; updateBill(true); updateSimulationPanel(); });
 function updateAfaLabel() { $('#afaValue').textContent = `${afaRate >= 0 ? '+' : ''}${afaRate.toFixed(2)} sen/kWh`; }
+function updateTariffStatus() {
+  const current = isProtectionConfigCurrent();
+  $('#tariffStamp').classList.toggle('expired', !current);
+  $('#tariffStampText').textContent = current ? `Peninsular Malaysia · ${tariffConfig.afa.period} rules` : `Tariff update required · protection ended ${tariffConfig.protection.effectiveUntil}`;
+}
 $('#afaSlider').addEventListener('input', (e) => { afaRate = Number(e.target.value); updateAfaLabel(); updateBill(); updateSimulationPanel(); });
 $('#afaReset').addEventListener('click', () => { afaRate = defaultAfa; $('#afaSlider').value = defaultAfa; updateAfaLabel(); updateBill(); updateSimulationPanel(); });
 
@@ -590,7 +542,7 @@ function setTime(minute) {
   const h = Math.floor(simMinute / 60), m = Math.floor(simMinute % 60);
   $('#simTime').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
   updateSky();
-  updateLiveLoad();
+  updateSceneState();
 }
 $('#timeSlider').addEventListener('input', (e) => setTime(Number(e.target.value)));
 $('#playButton').addEventListener('click', () => {
@@ -688,17 +640,10 @@ const ground = new THREE.Mesh(new THREE.PlaneGeometry(40,40), new THREE.MeshStan
 const stars = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({color:0x9ee8ca,size:.06,transparent:true,opacity:0}));
 const starData=[]; for(let i=0;i<220;i++) starData.push((Math.random()-.5)*30,Math.random()*12+3,(Math.random()-.5)*22); stars.geometry.setAttribute('position',new THREE.Float32BufferAttribute(starData,3)); scene.add(stars);
 
-function isActiveAtTime(a) {
-  if (!a?.included || !a.on) return false;
-  const hour = simMinute / 60;
-  if (a.hours >= 23.9) return true;
-  const end = (a.start + a.hours) % 24;
-  if (a.start + a.hours < 24) return hour >= a.start && hour < end;
-  return hour >= a.start || hour < end;
-}
+function isActiveAtTime(a) { return modelIsActiveAtTime(a, simMinute, simDay || 1); }
 function updateLiveLoad() {
   const active = appliances.filter(isActiveAtTime);
-  const kw = active.reduce((sum,a) => sum + wattsFor(a) * a.qty * operatingFactor(a), 0) / 1000;
+  const kw = liveLoadKwAt(appliances, simMinute, simDay || 1);
   $('#liveLoad').textContent = `${kw.toFixed(2)} kW`;
   $('#activeCount').textContent = `${active.length} appliance${active.length === 1 ? '' : 's'} running`;
   energyFlows.forEach(flow => {
@@ -707,24 +652,17 @@ function updateLiveLoad() {
     flow.pulses.forEach(p => p.orb.visible = on);
   });
 }
-function liveLoadKw() {
-  return appliances.filter(isActiveAtTime).reduce((sum,a) => sum + wattsFor(a) * a.qty * operatingFactor(a), 0) / 1000;
-}
-function isTouPeakAt(minute = simMinute, day = simDay || 1) {
-  const weekday = ((Math.max(1, day) - 1) % 7) < 5;
-  const hour = ((minute % 1440) + 1440) % 1440 / 60;
-  return weekday && hour >= 14 && hour < 22;
-}
+function relatedSceneAppliances(id) { return appliances.filter(a => a.included !== false && (a.templateId || a.id) === id); }
 function updateSceneState() {
   applianceMeshes.forEach((mesh, id) => {
-    const related = appliances.filter(a => a.included !== false && (a.templateId || a.id) === id);
+    const related = relatedSceneAppliances(id);
     const active = related.some(isActiveAtTime);
     const enabled = related.some(a => a.on);
     mesh.visible = related.length > 0;
     if (mesh?.material?.emissive) mesh.material.emissiveIntensity = active ? .9 : (enabled ? .16 : 0);
     mesh.scale.y = enabled ? 1.04 : 1;
   });
-  const lightsOn = appliances.some(a=>a.included !== false && (a.templateId || a.id)==='lights' && a.on);
+  const lightsOn = appliances.some(a=>(a.templateId || a.id)==='lights' && isActiveAtTime(a));
   const pcSetup = appliances.find(a=>a.included !== false && (a.templateId || a.id)==='pc' && a.on);
   pcMonitor1.visible = Boolean(pcSetup?.on);
   pcMonitor2.visible = Boolean(pcSetup?.on && pcSetup.variant?.includes('2 monitors'));
@@ -739,7 +677,7 @@ function updateSky() {
   const bg = new THREE.Color().lerpColors(new THREE.Color(0x071612), new THREE.Color(0x5c9e92), daylight*.72);
   renderer.setClearColor(bg,1); scene.fog.color.copy(bg);
   sun.intensity = .8 + daylight*3.8; stars.material.opacity = 1-daylight;
-  roomLights.forEach(light => light.intensity = appliances.some(a=>a.included !== false && (a.templateId || a.id)==='lights' && a.on) && daylight < .25 ? 8 : 0);
+  roomLights.forEach(light => light.intensity = appliances.some(a=>(a.templateId || a.id)==='lights' && isActiveAtTime(a)) && daylight < .25 ? 8 : 0);
 }
 
 const pointer = new THREE.Vector2(), raycaster = new THREE.Raycaster();
@@ -750,57 +688,80 @@ function hitFromEvent(event) {
 canvas.addEventListener('pointermove', e => {
   const hit=hitFromEvent(e), tip=$('#sceneTooltip');
   if(!hit){tip.classList.remove('show'); return;}
-  const a=appliances.find(x=>x.id===hit.object.userData.applianceId); tip.textContent=`${a.name} · ${a.on?'ON':'OFF'}`; const rect=$('#sceneWrap').getBoundingClientRect(); tip.style.left=`${e.clientX-rect.left}px`; tip.style.top=`${e.clientY-rect.top}px`; tip.classList.add('show');
+  const related=relatedSceneAppliances(hit.object.userData.applianceId); if(!related.length){tip.classList.remove('show'); return;} const activeCount=related.filter(a=>a.on).length; tip.textContent=`${related[0].name.replace(/ \d+$/, '')}${related.length > 1 ? ` · ${related.length} units` : ''} · ${activeCount ? 'ON' : 'OFF'}`; const rect=$('#sceneWrap').getBoundingClientRect(); tip.style.left=`${e.clientX-rect.left}px`; tip.style.top=`${e.clientY-rect.top}px`; tip.classList.add('show');
 });
 canvas.addEventListener('pointerleave',()=>$('#sceneTooltip').classList.remove('show'));
-canvas.addEventListener('click', e => { const hit=hitFromEvent(e); if(hit) mutateAppliance(hit.object.userData.applianceId,a=>a.on=!a.on); });
+canvas.addEventListener('click', e => {
+  const hit=hitFromEvent(e); if(!hit) return;
+  const related=relatedSceneAppliances(hit.object.userData.applianceId); if(!related.length) return;
+  const turnOn=!related.some(a=>a.on); related.forEach(a=>a.on=turnOn);
+  resetSimulation(false); renderAppliances(); updateBill(true);
+});
 
 function resize() {
   const rect=canvas.getBoundingClientRect(); renderer.setSize(rect.width,rect.height,false); const aspect=rect.width/rect.height; const view=7.2; camera.left=-view*aspect; camera.right=view*aspect; camera.top=view; camera.bottom=-view; camera.updateProjectionMatrix();
 }
 new ResizeObserver(resize).observe(canvas);
+let animationFrameId = 0;
+let sceneVisible = true;
+function scheduleFrame() {
+  if (!animationFrameId && (sceneVisible || playing) && !document.hidden) animationFrameId = requestAnimationFrame(animate);
+}
 function animate(now) {
-  requestAnimationFrame(animate);
+  animationFrameId = 0;
   if(playing){
-    const simulatedMinutes = (now-lastFrame)*.02*simSpeed;
-    const intervalKwh = liveLoadKw() * simulatedMinutes / 60;
-    runKwh += intervalKwh;
-    if (isTouPeakAt()) runPeakKwh += intervalKwh;
-    else runOffpeakKwh += intervalKwh;
-    const nextMinute = simMinute + simulatedMinutes;
-    const crossedDays = Math.floor(nextMinute / 1440);
-    setTime(nextMinute);
-    if (crossedDays) {
-      simDay += crossedDays;
-      if (simDay > daysAtHome) {
-        playing = false;
-        runComplete = true;
-        $('#playButton').setAttribute('aria-pressed', 'false');
-        $('#playButton').innerHTML = '<span>↻</span> Run again';
-      }
+    const elapsedMs = Math.min(100, Math.max(0, now-lastFrame));
+    const requestedMinutes = elapsedMs*.02*simSpeed;
+    const remainingMinutes = Math.max(0, (daysAtHome-simDay+1)*1440-simMinute);
+    const simulatedMinutes = Math.min(requestedMinutes, remainingMinutes);
+    const interval = integrateSimulationInterval(appliances, { startDay:simDay || 1, startMinute:simMinute, durationMinutes:simulatedMinutes });
+    runKwh += interval.totalKwh;
+    runPeakKwh += interval.peakKwh;
+    runOffpeakKwh += interval.offpeakKwh;
+    simDay = interval.endDay;
+    setTime(interval.endMinute);
+    if (remainingMinutes <= requestedMinutes + 1e-9) {
+      playing = false;
+      runComplete = true;
+      $('#playButton').setAttribute('aria-pressed', 'false');
+      $('#playButton').innerHTML = '<span>↻</span> Run again';
     }
     updateSimulationPanel();
   }
   lastFrame=now;
-  const fanA=appliances.find(a=>(a.templateId || a.id)==='fan' && isActiveAtTime(a)); if(fanA) fan.rotation.y += .07;
-  energyFlows.forEach((flow,flowIndex) => flow.pulses.forEach(p => {
-    if (!p.orb.visible) return;
-    const progress = (now*.00034*(1+Math.min(simSpeed,8)*.06) + p.offset + flowIndex*.083) % 1;
-    p.orb.position.copy(flow.curve.getPoint(progress));
-    const pulse = .72 + Math.sin(now*.012 + flowIndex)*.24;
-    p.orb.scale.setScalar(pulse);
-  }));
-  [...applianceMeshes.entries()].forEach(([id,mesh],index) => {
-    if(mesh.userData.baseY===undefined) mesh.userData.baseY=mesh.position.y;
-    const active=appliances.some(a=>(a.templateId || a.id)===id && isActiveAtTime(a));
-    mesh.position.y=mesh.userData.baseY+(active?Math.sin(now*.004+index)*.025:0);
-    if(active && mesh.material?.emissive) mesh.material.emissiveIntensity=.72+Math.sin(now*.006+index)*.24;
-  });
-  if(appliances.some(a=>(a.templateId || a.id)==='tv' && isActiveAtTime(a))) tv.material.emissiveIntensity=.55+Math.random()*.55;
-  powerHub.rotation.y += .012;
-  powerHub.scale.setScalar(.94+Math.sin(now*.006)*.08);
-  renderer.render(scene,camera);
+  if (sceneVisible) {
+    const fanA=appliances.find(a=>(a.templateId || a.id)==='fan' && isActiveAtTime(a)); if(fanA) fan.rotation.y += .07;
+    energyFlows.forEach((flow,flowIndex) => flow.pulses.forEach(p => {
+      if (!p.orb.visible) return;
+      const progress = (now*.00034*(1+Math.min(simSpeed,8)*.06) + p.offset + flowIndex*.083) % 1;
+      p.orb.position.copy(flow.curve.getPoint(progress));
+      const pulse = .72 + Math.sin(now*.012 + flowIndex)*.24;
+      p.orb.scale.setScalar(pulse);
+    }));
+    [...applianceMeshes.entries()].forEach(([id,mesh],index) => {
+      if(mesh.userData.baseY===undefined) mesh.userData.baseY=mesh.position.y;
+      const active=appliances.some(a=>(a.templateId || a.id)===id && isActiveAtTime(a));
+      mesh.position.y=mesh.userData.baseY+(active?Math.sin(now*.004+index)*.025:0);
+      if(active && mesh.material?.emissive) mesh.material.emissiveIntensity=.72+Math.sin(now*.006+index)*.24;
+    });
+    if(appliances.some(a=>(a.templateId || a.id)==='tv' && isActiveAtTime(a))) tv.material.emissiveIntensity=.55+Math.random()*.55;
+    powerHub.rotation.y += .012;
+    powerHub.scale.setScalar(.94+Math.sin(now*.006)*.08);
+    renderer.render(scene,camera);
+  }
+  scheduleFrame();
 }
+
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(([entry]) => {
+    sceneVisible = entry.isIntersecting;
+    if (sceneVisible) { lastFrame = performance.now(); scheduleFrame(); }
+  }, { threshold:.01 }).observe(canvas);
+}
+document.addEventListener('visibilitychange', () => {
+  lastFrame = performance.now();
+  if (!document.hidden) scheduleFrame();
+});
 
 function registerWebMcp() {
   const context=document.modelContext; if(!context?.registerTool) return;
@@ -820,4 +781,4 @@ function registerWebMcp() {
   try { void Promise.resolve(context.registerTool(tool)).catch(()=>{}); } catch {}
 }
 
-renderAppliances(); updateAfaLabel(); updateBill(); setTime(simMinute); updateSimulationPanel(); registerWebMcp(); resize(); animate(performance.now());
+renderAppliances(); updateAfaLabel(); updateTariffStatus(); updateBill(); setTime(simMinute); updateSimulationPanel(); registerWebMcp(); resize(); scheduleFrame();
