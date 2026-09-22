@@ -1,0 +1,291 @@
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+
+const protectionThreshold = 800;
+const daysPerMonth = 30;
+const defaultAfa = 3.67;
+
+const defaults = [
+  { id: 'aircon', name: 'Air conditioner', icon: '❄', watts: 1200, hours: 8, qty: 1, duty: 0.72, on: true, start: 22, end: 6, room: 'Bedroom' },
+  { id: 'fridge', name: 'Refrigerator', icon: '▥', watts: 130, hours: 24, qty: 1, duty: 0.38, on: true, start: 0, end: 24, room: 'Kitchen' },
+  { id: 'heater', name: 'Water heater', icon: '♨', watts: 3600, hours: 0.6, qty: 1, duty: 1, on: true, start: 7, end: 8, room: 'Bathroom' },
+  { id: 'washer', name: 'Washing machine', icon: '◉', watts: 500, hours: 0.55, qty: 1, duty: 1, on: true, start: 11, end: 12, room: 'Yard' },
+  { id: 'tv', name: 'Television', icon: '▰', watts: 95, hours: 4.5, qty: 1, duty: 1, on: true, start: 19, end: 23.5, room: 'Living' },
+  { id: 'fan', name: 'Ceiling fan', icon: '✣', watts: 55, hours: 8, qty: 2, duty: 1, on: true, start: 14, end: 22, room: 'Living' },
+  { id: 'lights', name: 'LED lights', icon: '●', watts: 9, hours: 6, qty: 9, duty: 1, on: true, start: 18, end: 24, room: 'Whole house' },
+  { id: 'rice', name: 'Rice cooker', icon: '◒', watts: 700, hours: 1.1, qty: 1, duty: 0.62, on: true, start: 17.5, end: 19, room: 'Kitchen' },
+  { id: 'router', name: 'Wi‑Fi router', icon: '⌁', watts: 12, hours: 24, qty: 1, duty: 1, on: true, start: 0, end: 24, room: 'Study' },
+  { id: 'pc', name: 'Desktop PC', icon: '▣', watts: 350, hours: 4, qty: 1, duty: 0.72, on: true, start: 9, end: 18, room: 'Study' },
+  { id: 'kettle', name: 'Kettle', icon: '◓', watts: 1800, hours: 0.2, qty: 1, duty: 1, on: true, start: 7, end: 7.3, room: 'Kitchen' },
+  { id: 'standby', name: 'Standby load', icon: '◌', watts: 32, hours: 24, qty: 1, duty: 1, on: true, start: 0, end: 24, room: 'Whole house' }
+];
+
+let appliances = structuredClone(defaults);
+let afaRate = defaultAfa;
+let baselineBill = null;
+let simMinute = 420;
+let playing = false;
+let lastFrame = performance.now();
+
+const $ = (selector) => document.querySelector(selector);
+const grid = $('#applianceGrid');
+const currency = (n) => `RM ${Math.abs(n).toFixed(2)}`;
+
+function incentiveRate(kwh) {
+  const bands = [[200,.25],[250,.245],[300,.225],[350,.21],[400,.17],[450,.145],[500,.12],[550,.105],[600,.09],[650,.075],[700,.055],[750,.045],[800,.04],[850,.025],[900,.01],[1000,.005]];
+  return (bands.find(([max]) => kwh <= max) || [0,0])[1];
+}
+
+function calculateBill() {
+  const kwh = appliances.reduce((sum, a) => sum + (a.on ? (a.watts / 1000) * a.hours * a.qty * a.duty * daysPerMonth : 0), 0);
+  const generationRate = kwh > 1500 ? .3703 : .2703;
+  const energy = kwh * generationRate;
+  const capacity = kwh * .0455;
+  const network = kwh * .1285;
+  const incentive = kwh * incentiveRate(kwh);
+  const protectedUser = kwh <= protectionThreshold;
+  const afa = protectedUser ? 0 : kwh * (afaRate / 100);
+  const retail = protectedUser ? 0 : 10;
+  const kwhChargesAfterDiscount = Math.max(0, energy + capacity + network - incentive);
+  const kwtbb = kwh > 300 ? kwhChargesAfterDiscount * .016 : 0;
+  const taxableShare = protectedUser ? 0 : Math.max(0, kwh - protectionThreshold) / kwh;
+  const sst = protectedUser ? 0 : ((kwhChargesAfterDiscount + afa) * taxableShare + retail) * .08;
+  const subtotal = energy + capacity + network + afa + retail - incentive + kwtbb + sst;
+  const total = Math.max(kwh > 0 ? 5 : 0, subtotal);
+  return { kwh, generationRate, energy, capacity, network, incentive, afa, retail, kwtbb, sst, total, protectedUser };
+}
+
+function applianceKwh(a) { return a.on ? (a.watts / 1000) * a.hours * a.qty * a.duty * daysPerMonth : 0; }
+
+function renderAppliances() {
+  grid.innerHTML = appliances.map(a => `
+    <article class="appliance-card ${a.on ? 'on' : ''}" data-card="${a.id}">
+      <div class="appliance-top">
+        <span class="appliance-icon" aria-hidden="true">${a.icon}</span>
+        <div class="appliance-name"><b>${a.name}</b><small>${a.watts.toLocaleString()} W · ${a.room}</small></div>
+        <button class="switch" type="button" data-action="toggle" data-id="${a.id}" aria-label="${a.on ? 'Switch off' : 'Switch on'} ${a.name}" aria-pressed="${a.on}"></button>
+      </div>
+      <div class="appliance-controls">
+        <div class="hours-control">
+          <label for="hours-${a.id}"><span>Hours / day</span><b>${a.hours.toFixed(a.hours < 1 ? 1 : 0)}h</b></label>
+          <input id="hours-${a.id}" data-action="hours" data-id="${a.id}" type="range" min="0" max="24" step="0.1" value="${a.hours}" ${a.on ? '' : 'disabled'}>
+        </div>
+        <div class="qty-control" aria-label="Quantity">
+          <button type="button" data-action="qty-down" data-id="${a.id}" aria-label="Reduce ${a.name} quantity">−</button>
+          <span>${a.qty}</span>
+          <button type="button" data-action="qty-up" data-id="${a.id}" aria-label="Increase ${a.name} quantity">+</button>
+        </div>
+      </div>
+    </article>`).join('');
+}
+
+function addBillLine(label, sub, value, rebate = false) {
+  return `<div class="bill-line ${rebate ? 'rebate' : ''}"><dt>${label}<span>${sub}</span></dt><dd>${rebate ? '−' : ''}${currency(value)}</dd></div>`;
+}
+
+function updateBill(announce = false) {
+  const b = calculateBill();
+  if (baselineBill === null) baselineBill = b.total;
+  $('#billTotal').textContent = b.total.toFixed(2);
+  $('#billTotalBottom').textContent = currency(b.total);
+  $('#kwhTotal').textContent = Math.round(b.kwh).toLocaleString();
+  $('#meterFill').style.width = `${Math.min(100, b.kwh / 1200 * 100)}%`;
+  const badge = $('#protectionBadge');
+  badge.textContent = b.protectedUser ? 'Protected ≤800 kWh' : 'Above protection';
+  badge.classList.toggle('warn', !b.protectedUser);
+  const diff = b.total - baselineBill;
+  $('#billDelta').textContent = Math.abs(diff) < .01 ? 'Your starting household estimate' : `${diff < 0 ? '↓' : '↑'} ${currency(diff)} ${diff < 0 ? 'saved' : 'more'} from your starting setup`;
+
+  const eeRate = incentiveRate(b.kwh) * 100;
+  $('#billLines').innerHTML = [
+    addBillLine('Energy charge', `${(b.generationRate*100).toFixed(2)} sen × ${b.kwh.toFixed(1)} kWh`, b.energy),
+    addBillLine('Capacity charge', `4.55 sen × ${b.kwh.toFixed(1)} kWh`, b.capacity),
+    addBillLine('Network charge', `12.85 sen × ${b.kwh.toFixed(1)} kWh`, b.network),
+    addBillLine('Energy Efficiency Incentive', eeRate ? `${eeRate.toFixed(2)} sen rebate on all kWh` : 'Not available above 1,000 kWh', b.incentive, true),
+    addBillLine('Automatic Fuel Adjustment', b.protectedUser ? `Exempt under current ${protectionThreshold} kWh protection` : `${afaRate >= 0 ? '+' : ''}${afaRate.toFixed(2)} sen × ${b.kwh.toFixed(1)} kWh`, Math.abs(b.afa), b.afa < 0),
+    addBillLine('Retail charge', b.protectedUser ? 'Exempt under current protection' : 'Fixed monthly charge', b.retail),
+    addBillLine('Renewable Energy Fund', b.kwh <= 300 ? 'Exempt at 300 kWh and below' : '1.6% of eligible usage charges', b.kwtbb),
+    addBillLine('Service tax', b.protectedUser ? 'Exempt under current protection' : '8% on estimated taxable portion', b.sst)
+  ].join('');
+
+  const score = Math.max(8, Math.round(100 - Math.max(0, b.kwh - 250) * .085 - Math.max(0, b.total - 120) * .045));
+  $('#scoreValue').textContent = score;
+  $('#scoreRing').style.setProperty('--score', `${score * 3.6}deg`);
+  $('#scoreTitle').textContent = score >= 80 ? 'Efficient household' : score >= 60 ? 'Good, with room to trim' : score >= 40 ? 'High-use household' : 'Energy intensive';
+  $('#scoreCopy').textContent = b.protectedUser ? `${Math.max(0, protectionThreshold - b.kwh).toFixed(0)} kWh of headroom before AFA, retail and SST protection ends.` : `${(b.kwh - protectionThreshold).toFixed(0)} kWh above the current protection line.`;
+
+  const ranked = appliances.filter(a => a.on).sort((a,c) => applianceKwh(c) - applianceKwh(a));
+  const top = ranked[0];
+  if (top) {
+    const oneHour = (top.watts / 1000) * top.qty * top.duty * daysPerMonth;
+    $('#coachTitle').textContent = `Trim ${top.name.toLowerCase()} by one hour`;
+    $('#coachCopy').textContent = `Your biggest load uses about ${applianceKwh(top).toFixed(0)} kWh/month. One hour less per day removes roughly ${oneHour.toFixed(0)} kWh before tariff effects.`;
+  }
+  updateSceneState();
+  if (announce) $('#billTotal').setAttribute('aria-label', `Estimated bill ${currency(b.total)}`);
+}
+
+function mutateAppliance(id, mutator) {
+  const a = appliances.find(item => item.id === id);
+  if (!a) return;
+  mutator(a);
+  renderAppliances();
+  updateBill(true);
+}
+
+grid.addEventListener('input', (event) => {
+  const id = event.target.dataset.id;
+  if (event.target.dataset.action === 'hours') mutateAppliance(id, a => a.hours = Number(event.target.value));
+});
+grid.addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  const { action, id } = button.dataset;
+  if (action === 'toggle') mutateAppliance(id, a => a.on = !a.on);
+  if (action === 'qty-up') mutateAppliance(id, a => a.qty = Math.min(6, a.qty + 1));
+  if (action === 'qty-down') mutateAppliance(id, a => a.qty = Math.max(1, a.qty - 1));
+});
+
+const presets = {
+  careful: { aircon:[5,1], heater:[.35,1], fan:[7,1], lights:[4,7], tv:[2.5,1], pc:[2,1] },
+  wfh: { aircon:[9,1], heater:[.6,1], fan:[10,2], lights:[6,9], tv:[4,1], pc:[9,1] },
+  hot: { aircon:[13,2], heater:[.7,1], fan:[12,3], lights:[6,10], tv:[5,1], pc:[5,1] }
+};
+document.querySelectorAll('[data-preset]').forEach(button => button.addEventListener('click', () => {
+  appliances = structuredClone(defaults);
+  const config = presets[button.dataset.preset];
+  Object.entries(config).forEach(([id,[hours,qty]]) => { const a = appliances.find(x => x.id === id); a.hours = hours; a.qty = qty; });
+  renderAppliances(); updateBill(true);
+}));
+
+$('#resetButton').addEventListener('click', () => { appliances = structuredClone(defaults); afaRate = defaultAfa; $('#afaSlider').value = defaultAfa; baselineBill = null; renderAppliances(); updateAfaLabel(); updateBill(true); });
+$('#infoToggle').addEventListener('click', () => { const note = $('#formulaNote'); note.hidden = !note.hidden; $('#infoToggle').setAttribute('aria-expanded', String(!note.hidden)); });
+function updateAfaLabel() { $('#afaValue').textContent = `${afaRate >= 0 ? '+' : ''}${afaRate.toFixed(2)} sen/kWh`; }
+$('#afaSlider').addEventListener('input', (e) => { afaRate = Number(e.target.value); updateAfaLabel(); updateBill(); });
+$('#afaReset').addEventListener('click', () => { afaRate = defaultAfa; $('#afaSlider').value = defaultAfa; updateAfaLabel(); updateBill(); });
+
+function setTime(minute) {
+  simMinute = (minute + 1440) % 1440;
+  $('#timeSlider').value = Math.round(simMinute);
+  const h = Math.floor(simMinute / 60), m = Math.floor(simMinute % 60);
+  $('#simTime').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  updateSky();
+}
+$('#timeSlider').addEventListener('input', (e) => setTime(Number(e.target.value)));
+$('#playButton').addEventListener('click', () => { playing = !playing; $('#playButton').setAttribute('aria-pressed', String(playing)); $('#playButton').innerHTML = playing ? '<span>Ⅱ</span> Pause day' : '<span>▶</span> Run a day'; });
+
+// Three.js flat-isometric house
+const canvas = $('#houseCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0c261f, 15, 28);
+const camera = new THREE.OrthographicCamera(-8, 8, 6, -6, .1, 100);
+camera.position.set(11, 12, 13); camera.lookAt(0,0,0);
+scene.add(new THREE.HemisphereLight(0xfff2c2, 0x142a26, 2.5));
+const sun = new THREE.DirectionalLight(0xffe6a0, 4.2); sun.position.set(7,12,8); sun.castShadow = true; scene.add(sun);
+const group = new THREE.Group(); group.rotation.y = -.08; scene.add(group);
+const applianceMeshes = new Map();
+const roomLights = [];
+function box(w,h,d,color,x,y,z, name='', emissive=0x000000) {
+  const material = new THREE.MeshStandardMaterial({ color, roughness: .72, emissive, emissiveIntensity: 0 });
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), material); mesh.position.set(x,y,z); mesh.castShadow = true; mesh.receiveShadow = true; if (name) mesh.userData.applianceId = name; group.add(mesh); return mesh;
+}
+box(13,.3,9,0x24483b,0,-.2,0);
+// Room floors and low walls
+box(5.8,.12,4.1,0xdacfae,-3,.02,-2.25); box(5.8,.12,4.1,0xb7cfbe,3,.02,-2.25);
+box(5.8,.12,4.1,0xd7bb92,-3,.02,2.25); box(5.8,.12,4.1,0xa9c5c7,3,.02,2.25);
+box(12,.85,.16,0xf1ead9,0,.55,-4.35); box(.16,.85,8.7,0xf1ead9,-6,.55,0); box(.16,.85,8.7,0xf1ead9,6,.55,0); box(12,.85,.16,0xf1ead9,0,.55,4.35);
+box(.14,.55,8.5,0x5e796f,0,.4,0); box(11.8,.55,.14,0x5e796f,0,.4,0);
+// Furniture and appliances; restrained, toy-like geometry
+box(3.1,.65,1.4,0x48665c,-3,.42,3.0); box(1.2,.38,1.2,0xf4c84a,-3,.26,1.8); // sofa/table
+const tv = box(1.7,1.05,.16,0x101916,-5.1,.75,1.3,'tv',0xf4c84a); applianceMeshes.set('tv', tv);
+box(3.2,.55,2.2,0xe8dfca,3,.34,2.55); box(3.2,.16,.22,0x7e9b91,3,1.05,3.58); // bed
+const ac = box(1.55,.48,.42,0xe9eee8,4.5,1.15,.5,'aircon',0x78d9ff); applianceMeshes.set('aircon', ac);
+box(4.8,.68,.72,0x536e61,-3,.43,-3.2); // kitchen bench
+const fridge = box(1.15,2.2,1.0,0xdce5df,-5.0,1.17,-2.1,'fridge',0x8ae6bd); applianceMeshes.set('fridge', fridge);
+const rice = box(.65,.6,.65,0xf0eee5,-2.8,.92,-3.15,'rice',0xf4c84a); applianceMeshes.set('rice', rice);
+const kettle = box(.42,.62,.42,0x25362f,-1.75,.92,-3.15,'kettle',0xff7a3d); applianceMeshes.set('kettle', kettle);
+box(2.3,.7,.65,0x3c5b51,3,.45,-3.25); // desk
+const pc = box(.85,1.15,.65,0x151e1b,4.8,.62,-3.0,'pc',0x8ae6bd); applianceMeshes.set('pc', pc);
+const washer = box(1.1,1.15,1.0,0xe4ebe5,1.15,.62,-2.85,'washer',0x78d9ff); applianceMeshes.set('washer', washer);
+const heater = box(.56,1.1,.5,0xe7e3d6,5.25,.75,-1.3,'heater',0xff7a3d); applianceMeshes.set('heater', heater);
+const router = box(.58,.16,.42,0x182520,2.1,.86,-3.25,'router',0x8ae6bd); applianceMeshes.set('router', router);
+// bulbs/fans as interactive tokens
+[[-3,2.1,2.2],[3,2.1,2.2],[-3,2.1,-2.2],[3,2.1,-2.2]].forEach((p,i)=>{ const bulb = new THREE.PointLight(0xffcc55,0,4); bulb.position.set(...p); group.add(bulb); roomLights.push(bulb); const orb = new THREE.Mesh(new THREE.SphereGeometry(.13,12,12), new THREE.MeshBasicMaterial({color:0xf4c84a})); orb.position.set(...p); orb.userData.applianceId='lights'; group.add(orb); if(i===0) applianceMeshes.set('lights',orb); });
+const fan = new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.08,16), new THREE.MeshStandardMaterial({color:0x304f45})); fan.position.set(-2.7,2.05,1.9); fan.userData.applianceId='fan'; group.add(fan); applianceMeshes.set('fan',fan);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(40,40), new THREE.MeshStandardMaterial({color:0x0b1d18,roughness:1})); ground.rotation.x=-Math.PI/2; ground.position.y=-.38; ground.receiveShadow=true; scene.add(ground);
+const stars = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({color:0x9ee8ca,size:.06,transparent:true,opacity:0}));
+const starData=[]; for(let i=0;i<220;i++) starData.push((Math.random()-.5)*30,Math.random()*12+3,(Math.random()-.5)*22); stars.geometry.setAttribute('position',new THREE.Float32BufferAttribute(starData,3)); scene.add(stars);
+
+function isActiveAtTime(a) {
+  if (!a.on) return false;
+  const hour = simMinute / 60;
+  if (a.hours >= 23.9) return true;
+  if (a.start <= a.end) return hour >= a.start && hour <= a.end;
+  return hour >= a.start || hour <= a.end;
+}
+function updateSceneState() {
+  appliances.forEach(a => {
+    const mesh = applianceMeshes.get(a.id);
+    if (mesh?.material?.emissive) mesh.material.emissiveIntensity = a.on ? .7 : 0;
+    if (mesh) mesh.scale.y = a.on ? 1.04 : 1;
+  });
+  const lightsOn = appliances.find(a=>a.id==='lights')?.on;
+  roomLights.forEach(light => light.intensity = lightsOn && (simMinute/60 > 17 || simMinute/60 < 6) ? 8 : 0);
+}
+function updateSky() {
+  const hour = simMinute/60;
+  const daylight = Math.max(0, Math.sin(((hour-6)/12)*Math.PI));
+  const bg = new THREE.Color().lerpColors(new THREE.Color(0x071612), new THREE.Color(0x5c9e92), daylight*.72);
+  renderer.setClearColor(bg,1); scene.fog.color.copy(bg);
+  sun.intensity = .8 + daylight*3.8; stars.material.opacity = 1-daylight;
+  roomLights.forEach(light => light.intensity = appliances.find(a=>a.id==='lights')?.on && daylight < .25 ? 8 : 0);
+}
+
+const pointer = new THREE.Vector2(), raycaster = new THREE.Raycaster();
+function hitFromEvent(event) {
+  const rect = canvas.getBoundingClientRect(); pointer.x=((event.clientX-rect.left)/rect.width)*2-1; pointer.y=-((event.clientY-rect.top)/rect.height)*2+1; raycaster.setFromCamera(pointer,camera);
+  return raycaster.intersectObjects(group.children,false).find(hit=>hit.object.userData.applianceId);
+}
+canvas.addEventListener('pointermove', e => {
+  const hit=hitFromEvent(e), tip=$('#sceneTooltip');
+  if(!hit){tip.classList.remove('show'); return;}
+  const a=appliances.find(x=>x.id===hit.object.userData.applianceId); tip.textContent=`${a.name} · ${a.on?'ON':'OFF'}`; const rect=$('#sceneWrap').getBoundingClientRect(); tip.style.left=`${e.clientX-rect.left}px`; tip.style.top=`${e.clientY-rect.top}px`; tip.classList.add('show');
+});
+canvas.addEventListener('pointerleave',()=>$('#sceneTooltip').classList.remove('show'));
+canvas.addEventListener('click', e => { const hit=hitFromEvent(e); if(hit) mutateAppliance(hit.object.userData.applianceId,a=>a.on=!a.on); });
+
+function resize() {
+  const rect=canvas.getBoundingClientRect(); renderer.setSize(rect.width,rect.height,false); const aspect=rect.width/rect.height; const view=7.2; camera.left=-view*aspect; camera.right=view*aspect; camera.top=view; camera.bottom=-view; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+function animate(now) {
+  requestAnimationFrame(animate);
+  if(playing && now-lastFrame>32){ setTime(simMinute+(now-lastFrame)*.012); }
+  lastFrame=now;
+  const fanA=appliances.find(a=>a.id==='fan'); if(fanA && isActiveAtTime(fanA)) fan.rotation.y += .07;
+  group.position.y=Math.sin(now*.00055)*.025;
+  renderer.render(scene,camera);
+}
+
+function registerWebMcp() {
+  const context=document.modelContext; if(!context?.registerTool) return;
+  const tool={
+    name:'configure_household_energy', title:'Configure household energy',
+    description:'Set appliance usage in the visible RumahWatt simulation and return the updated monthly kWh and Malaysian bill estimate.',
+    inputSchema:{type:'object',properties:{appliances:{type:'array',items:{type:'object',properties:{id:{type:'string'},hoursPerDay:{type:'number',minimum:0,maximum:24},quantity:{type:'integer',minimum:1,maximum:6},enabled:{type:'boolean'}},required:['id'],additionalProperties:false}},afaSenPerKwh:{type:'number',minimum:-10,maximum:10}},additionalProperties:false},
+    annotations:{readOnlyHint:false,untrustedContentHint:false},
+    execute(input){
+      if(!input || typeof input!=='object') throw new Error('Input must be an object.');
+      if(input.afaSenPerKwh!==undefined){ if(!Number.isFinite(input.afaSenPerKwh)||input.afaSenPerKwh < -10||input.afaSenPerKwh > 10) throw new Error('AFA must be between -10 and 10 sen/kWh.'); afaRate=input.afaSenPerKwh; $('#afaSlider').value=afaRate; updateAfaLabel(); }
+      if(input.appliances){ for(const update of input.appliances){ const a=appliances.find(x=>x.id===update.id); if(!a) throw new Error(`Unknown appliance id: ${update.id}`); if(update.hoursPerDay!==undefined) a.hours=update.hoursPerDay; if(update.quantity!==undefined) a.qty=update.quantity; if(update.enabled!==undefined) a.on=update.enabled; } }
+      renderAppliances(); updateBill(true); const bill=calculateBill(); return {monthlyKwh:Number(bill.kwh.toFixed(1)),estimatedBillRm:Number(bill.total.toFixed(2)),protected:bill.protectedUser};
+    }
+  };
+  try { void Promise.resolve(context.registerTool(tool)).catch(()=>{}); } catch {}
+}
+
+renderAppliances(); updateAfaLabel(); updateBill(); setTime(simMinute); registerWebMcp(); resize(); animate(performance.now());
