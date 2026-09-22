@@ -5,10 +5,10 @@ const daysPerMonth = 30;
 const defaultAfa = 3.67;
 
 const defaults = [
-  { id: 'homebase', name: 'House idle load', icon: '⌂', watts: 28, hours: 24, qty: 1, duty: 1, on: true, alwaysOn: true, start: 0, room: 'Whole house', note: 'Small standby loads left connected' },
+  { id: 'homebase', name: 'House idle load', icon: '⌂', watts: 28, hours: 24, qty: 1, duty: 1, on: true, alwaysOn: true, awayOn: true, start: 0, room: 'Whole house', note: 'Small standby loads left connected' },
   { id: 'aircon', name: 'Air conditioner', icon: '❄', watts: 1050, hours: 8, qty: 1, duty: 0.72, on: true, start: 22, room: 'Bedroom', variant: '1.5 HP', stars: 5, variants: [{ label:'1.0 HP', watts:720 },{ label:'1.5 HP', watts:1050 },{ label:'2.0 HP', watts:1450 },{ label:'2.5 HP', watts:1850 },{ label:'3.0 HP', watts:2300 }] },
-  { id: 'fridge', name: 'Refrigerator', icon: '▥', watts: 150, hours: 24, qty: 1, duty: 0.38, on: true, start: 0, room: 'Kitchen', variant: '2-door · 300L', variantLabel: 'Fridge type', stars: 4, variants: [{ label:'Mini bar · 90L', watts:70 },{ label:'1-door · 180L', watts:105 },{ label:'2-door · 300L', watts:150 },{ label:'4-door · 500L', watts:240 },{ label:'Side-by-side · 600L', watts:270 }] },
-  { id: 'freezer', name: 'Freezer', icon: '▤', watts: 160, hours: 24, qty: 1, duty: 0.42, on: false, start: 0, room: 'Kitchen', variant: 'Chest · 300L', variantLabel: 'Freezer type', stars: 4, variants: [{ label:'Chest · 150L', watts:110 },{ label:'Chest · 300L', watts:160 },{ label:'Upright · 250L', watts:185 },{ label:'Upright · 400L', watts:240 }] },
+  { id: 'fridge', name: 'Refrigerator', icon: '▥', watts: 150, hours: 24, qty: 1, duty: 0.38, on: true, awayOn: true, start: 0, room: 'Kitchen', variant: '2-door · 300L', variantLabel: 'Fridge type', stars: 4, variants: [{ label:'Mini bar · 90L', watts:70 },{ label:'1-door · 180L', watts:105 },{ label:'2-door · 300L', watts:150 },{ label:'4-door · 500L', watts:240 },{ label:'Side-by-side · 600L', watts:270 }] },
+  { id: 'freezer', name: 'Freezer', icon: '▤', watts: 160, hours: 24, qty: 1, duty: 0.42, on: false, awayOn: true, start: 0, room: 'Kitchen', variant: 'Chest · 300L', variantLabel: 'Freezer type', stars: 4, variants: [{ label:'Chest · 150L', watts:110 },{ label:'Chest · 300L', watts:160 },{ label:'Upright · 250L', watts:185 },{ label:'Upright · 400L', watts:240 }] },
   { id: 'heater', name: 'Water heater', icon: '♨', watts: 3600, hours: 0.6, qty: 1, duty: 1, on: true, start: 7, end: 8, room: 'Bathroom', variant: 'Instant shower · no pump', variantLabel: 'Heater type', variants: [{ label:'Instant shower · no pump', watts:3600, duty:1 },{ label:'Instant shower · with pump', watts:3650, duty:1 },{ label:'Instant high-flow · 5.5 kW', watts:5500, duty:1 },{ label:'Storage tank · 20L', watts:2500, duty:.55 },{ label:'Storage tank · 30–90L', watts:3000, duty:.45 }], note: 'Instant heaters draw full power while water flows. Storage heaters cycle on and off; the estimate includes typical thermostat cycling.' },
   { id: 'washer', name: 'Washing machine', icon: '◉', watts: 500, hours: 0.75, qty: 1, duty: .65, on: true, start: 11, end: 12, room: 'Yard', variant: 'Top load · 8–10kg', variantLabel: 'Washer & cycle', variants: [{ label:'Top load · 8–10kg', watts:500, duty:.65 },{ label:'Top load · 11–14kg', watts:650, duty:.65 },{ label:'Front load · cold wash', watts:500, duty:.55 },{ label:'Front load · warm wash', watts:2000, duty:.28 },{ label:'Front load · steam/hot', watts:2200, duty:.32 }], note: 'Cold front-load cycles usually use less electricity; warm, steam and hot cycles use an internal heater and can use much more.' },
   { id: 'dryer', name: 'Clothes dryer', icon: '◍', watts: 2500, hours: 0.45, qty: 1, duty: 1, on: false, start: 12, room: 'Yard', variant: 'Vented · 8kg', variantLabel: 'Dryer type', variants: [{ label:'Heat pump · 8kg', watts:900 },{ label:'Condenser · 8kg', watts:2100 },{ label:'Vented · 8kg', watts:2500 }] },
@@ -20,11 +20,11 @@ const defaults = [
   { id: 'oven', name: 'Electric oven', icon: '▦', watts: 2400, hours: 0.5, qty: 1, duty: 0.75, on: false, start: 18, room: 'Kitchen' },
   { id: 'hood', name: 'Cooker hood', icon: '≋', watts: 180, hours: 1, qty: 1, duty: 1, on: false, start: 18, room: 'Kitchen', note: 'Kitchen smoke and exhaust fan' },
   { id: 'iron', name: 'Clothes iron', icon: '◢', watts: 1000, hours: 0.35, qty: 1, duty: .65, on: false, start: 16, room: 'Yard', variant: 'Dry iron', variantLabel: 'Iron type', variants: [{ label:'Dry iron', watts:1000, duty:.65 },{ label:'Basic steam iron', watts:1400, duty:.65 },{ label:'Cordless steam iron', watts:1800, duty:.55 },{ label:'High-power steam iron', watts:2300, duty:.6 },{ label:'Steam generator', watts:2400, duty:.7 }], note: 'The wattage is peak heating input. The thermostat cycles, so the estimate uses a typical on/off heating pattern.' },
-  { id: 'router', name: 'Wi‑Fi router', icon: '⌁', watts: 12, hours: 24, qty: 1, duty: 1, on: true, start: 0, end: 24, room: 'Study' },
+  { id: 'router', name: 'Wi‑Fi router', icon: '⌁', watts: 12, hours: 24, qty: 1, duty: 1, on: true, awayOn: true, start: 0, end: 24, room: 'Study' },
   { id: 'pc', name: 'Desktop PC', icon: '▣', watts: 350, hours: 4, qty: 1, duty: 0.72, on: true, start: 9, end: 18, room: 'Study' },
   { id: 'kettle', name: 'Kettle', icon: '◓', watts: 1800, hours: 0.2, qty: 1, duty: 1, on: true, start: 7, end: 7.3, room: 'Kitchen' },
   { id: 'ev', name: 'Home EV charging', icon: '⚡', watts: 7400, hours: 1.5, qty: 1, duty: 1, on: false, start: 0, room: 'Car porch', variant: 'Wallbox · 7.4 kW', variantLabel: 'Charger type', variants: [{ label:'Portable plug · 2.3 kW', watts:2300 },{ label:'Wallbox · 3.7 kW', watts:3700 },{ label:'Wallbox · 7.4 kW', watts:7400 },{ label:'3-phase · 11 kW', watts:11000 }], note: 'Adds to your home bill when charged at home' },
-  { id: 'standby', name: 'Standby load', icon: '◌', watts: 32, hours: 24, qty: 1, duty: 1, on: true, start: 0, end: 24, room: 'Whole house' }
+  { id: 'standby', name: 'Standby load', icon: '◌', watts: 32, hours: 24, qty: 1, duty: 1, on: true, awayOn: true, start: 0, end: 24, room: 'Whole house' }
 ];
 
 let appliances = structuredClone(defaults);
@@ -33,6 +33,10 @@ let baselineBill = null;
 let simMinute = 420;
 let playing = false;
 let simSpeed = 1;
+let daysAtHome = 30;
+let simDay = 0;
+let runKwh = 0;
+let runComplete = false;
 let lastFrame = performance.now();
 
 const $ = (selector) => document.querySelector(selector);
@@ -61,8 +65,9 @@ function incentiveRate(kwh) {
   return (bands.find(([max]) => kwh <= max) || [0,0])[1];
 }
 
-function calculateBill() {
-  const kwh = appliances.reduce((sum, a) => sum + (a.on ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * daysPerMonth : 0), 0);
+function usageDaysFor(a) { return a.awayOn ? daysPerMonth : daysAtHome; }
+function monthlyKwh() { return appliances.reduce((sum, a) => sum + (a.on ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * usageDaysFor(a) : 0), 0); }
+function calculateBill(kwh = monthlyKwh()) {
   const generationRate = kwh > 1500 ? .3703 : .2703;
   const energy = kwh * generationRate;
   const capacity = kwh * .0455;
@@ -81,12 +86,40 @@ function calculateBill() {
   return { kwh, generationRate, energy, capacity, network, incentive, afa, retail, kwtbb, sst, subtotal, minimumAdjustment, total, protectedUser };
 }
 
-function applianceKwh(a) { return a.on ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * daysPerMonth : 0; }
+function applianceKwh(a) { return a.on ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * usageDaysFor(a) : 0; }
+function holidayBackgroundKwh() {
+  const holidayDays = daysPerMonth - daysAtHome;
+  return appliances.reduce((sum, a) => sum + (a.on && a.awayOn ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * holidayDays : 0), 0);
+}
+function updateSimulationPanel() {
+  const holidayDays = daysPerMonth - daysAtHome;
+  const shownKwh = runComplete ? runKwh + holidayBackgroundKwh() : runKwh;
+  const progress = runComplete ? 1 : (simDay ? Math.min(1, ((simDay - 1) + simMinute / 1440) / daysAtHome) : 0);
+  $('#runDay').textContent = runComplete ? daysAtHome : simDay;
+  $('#runTarget').textContent = daysAtHome;
+  $('#runProgress').style.width = `${progress * 100}%`;
+  $('#runKwh').textContent = `${shownKwh.toFixed(1)} kWh`;
+  $('#runBill').textContent = currency(calculateBill(shownKwh).total);
+  $('#runState').textContent = daysAtHome === 0 ? 'HOLIDAY' : runComplete ? 'COMPLETE' : playing ? 'RUNNING' : 'READY';
+  $('#homeDaysValue').textContent = daysAtHome;
+  $('#holidayNote').textContent = holidayDays ? `${holidayDays} holiday day${holidayDays === 1 ? '' : 's'}: only fridge, freezer, router and background loads continue.` : 'No holiday days in this billing month.';
+}
+function resetSimulation(resetClock = true) {
+  playing = false;
+  simDay = 0;
+  runKwh = 0;
+  runComplete = daysAtHome === 0;
+  $('#playButton').setAttribute('aria-pressed', 'false');
+  $('#playButton').disabled = daysAtHome === 0;
+  $('#playButton').innerHTML = daysAtHome === 0 ? '<span>⌂</span> Background only' : '<span>▶</span> Run simulation';
+  if (resetClock) setTime(0);
+  updateSimulationPanel();
+}
 
 function renderAppliances() {
   grid.innerHTML = appliances.map(a => {
     const estimatedWatts = wattsFor(a);
-    const monthlyKwh = (estimatedWatts / 1000) * a.hours * a.qty * a.duty * daysPerMonth;
+    const monthlyKwh = (estimatedWatts / 1000) * a.hours * a.qty * a.duty * usageDaysFor(a);
     const ratingControl = a.stars ? `
         <div class="rating-control">
           <span>Energy rating</span>
@@ -183,6 +216,7 @@ function mutateAppliance(id, mutator) {
   const a = appliances.find(item => item.id === id);
   if (!a) return;
   mutator(a);
+  resetSimulation(false);
   renderAppliances();
   updateBill(true);
 }
@@ -214,14 +248,14 @@ document.querySelectorAll('[data-preset]').forEach(button => button.addEventList
   appliances = structuredClone(defaults);
   const config = presets[button.dataset.preset];
   Object.entries(config).forEach(([id,[hours,qty]]) => { const a = appliances.find(x => x.id === id); a.hours = hours; a.qty = qty; });
-  renderAppliances(); updateBill(true);
+  resetSimulation(); renderAppliances(); updateBill(true);
 }));
 
-$('#resetButton').addEventListener('click', () => { appliances = structuredClone(defaults); afaRate = defaultAfa; $('#afaSlider').value = defaultAfa; baselineBill = null; renderAppliances(); updateAfaLabel(); updateBill(true); });
+$('#resetButton').addEventListener('click', () => { appliances = structuredClone(defaults); afaRate = defaultAfa; daysAtHome = 30; $('#homeDays').value = daysAtHome; $('#afaSlider').value = defaultAfa; baselineBill = null; resetSimulation(); renderAppliances(); updateAfaLabel(); updateBill(true); });
 $('#infoToggle').addEventListener('click', () => { const note = $('#formulaNote'); note.hidden = !note.hidden; $('#infoToggle').setAttribute('aria-expanded', String(!note.hidden)); });
 function updateAfaLabel() { $('#afaValue').textContent = `${afaRate >= 0 ? '+' : ''}${afaRate.toFixed(2)} sen/kWh`; }
-$('#afaSlider').addEventListener('input', (e) => { afaRate = Number(e.target.value); updateAfaLabel(); updateBill(); });
-$('#afaReset').addEventListener('click', () => { afaRate = defaultAfa; $('#afaSlider').value = defaultAfa; updateAfaLabel(); updateBill(); });
+$('#afaSlider').addEventListener('input', (e) => { afaRate = Number(e.target.value); updateAfaLabel(); updateBill(); updateSimulationPanel(); });
+$('#afaReset').addEventListener('click', () => { afaRate = defaultAfa; $('#afaSlider').value = defaultAfa; updateAfaLabel(); updateBill(); updateSimulationPanel(); });
 
 function setTime(minute) {
   simMinute = (minute + 1440) % 1440;
@@ -232,7 +266,21 @@ function setTime(minute) {
   updateLiveLoad();
 }
 $('#timeSlider').addEventListener('input', (e) => setTime(Number(e.target.value)));
-$('#playButton').addEventListener('click', () => { playing = !playing; $('#playButton').setAttribute('aria-pressed', String(playing)); $('#playButton').innerHTML = playing ? '<span>Ⅱ</span> Pause' : '<span>▶</span> Simulate a day'; });
+$('#playButton').addEventListener('click', () => {
+  if (runComplete) resetSimulation();
+  if (!simDay) simDay = 1;
+  playing = !playing;
+  $('#playButton').setAttribute('aria-pressed', String(playing));
+  $('#playButton').innerHTML = playing ? '<span>Ⅱ</span> Pause' : '<span>▶</span> Continue';
+  updateSimulationPanel();
+});
+$('#runReset').addEventListener('click', () => resetSimulation());
+$('#homeDays').addEventListener('input', (event) => {
+  daysAtHome = Number(event.target.value);
+  resetSimulation();
+  renderAppliances();
+  updateBill(true);
+});
 document.querySelectorAll('[data-speed]').forEach(button => button.addEventListener('click', () => {
   simSpeed = Number(button.dataset.speed);
   document.querySelectorAll('[data-speed]').forEach(candidate => {
@@ -329,6 +377,9 @@ function updateLiveLoad() {
     flow.pulses.forEach(p => p.orb.visible = on);
   });
 }
+function liveLoadKw() {
+  return appliances.filter(isActiveAtTime).reduce((sum,a) => sum + wattsFor(a) * a.qty * a.duty, 0) / 1000;
+}
 function updateSceneState() {
   appliances.forEach(a => {
     const mesh = applianceMeshes.get(a.id);
@@ -367,7 +418,23 @@ function resize() {
 new ResizeObserver(resize).observe(canvas);
 function animate(now) {
   requestAnimationFrame(animate);
-  if(playing){ setTime(simMinute+(now-lastFrame)*.02*simSpeed); }
+  if(playing){
+    const simulatedMinutes = (now-lastFrame)*.02*simSpeed;
+    runKwh += liveLoadKw() * simulatedMinutes / 60;
+    const nextMinute = simMinute + simulatedMinutes;
+    const crossedDays = Math.floor(nextMinute / 1440);
+    setTime(nextMinute);
+    if (crossedDays) {
+      simDay += crossedDays;
+      if (simDay > daysAtHome) {
+        playing = false;
+        runComplete = true;
+        $('#playButton').setAttribute('aria-pressed', 'false');
+        $('#playButton').innerHTML = '<span>↻</span> Run again';
+      }
+    }
+    updateSimulationPanel();
+  }
   lastFrame=now;
   const fanA=appliances.find(a=>a.id==='fan'); if(fanA && isActiveAtTime(fanA)) fan.rotation.y += .07;
   energyFlows.forEach((flow,flowIndex) => flow.pulses.forEach(p => {
@@ -407,4 +474,4 @@ function registerWebMcp() {
   try { void Promise.resolve(context.registerTool(tool)).catch(()=>{}); } catch {}
 }
 
-renderAppliances(); updateAfaLabel(); updateBill(); setTime(simMinute); registerWebMcp(); resize(); animate(performance.now());
+renderAppliances(); updateAfaLabel(); updateBill(); setTime(simMinute); updateSimulationPanel(); registerWebMcp(); resize(); animate(performance.now());

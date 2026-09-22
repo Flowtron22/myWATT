@@ -33,8 +33,8 @@
           </div>
           <div class="day-controls" aria-label="Day simulation controls">
             <div class="play-wrap">
-              <button class="play-button" id="playButton" type="button" aria-pressed="false"><span>▶</span> Simulate a day</button>
-              <small>Watch appliances follow their daily schedule</small>
+              <button class="play-button" id="playButton" type="button" aria-pressed="false"><span>▶</span> Run simulation</button>
+              <small>Watch your selected days build a real bill</small>
             </div>
             <div class="clock-wrap">
               <span id="simTime">07:00</span>
@@ -52,6 +52,21 @@
           <canvas id="houseCanvas" aria-label="Interactive isometric house. Select an appliance to switch it on or off."></canvas>
           <div class="scene-tooltip" id="sceneTooltip" role="status" aria-live="polite"></div>
           <div class="scene-legend"><span></span><b id="liveLoad">0.00 kW</b><em id="activeCount">0 appliances running</em></div>
+          <section class="run-card" aria-labelledby="runTitle">
+            <div class="run-heading">
+              <div><p class="eyebrow">LIVE BILLING RUN</p><h2 id="runTitle">Day <b id="runDay">0</b> of <b id="runTarget">30</b></h2></div>
+              <span id="runState">READY</span>
+            </div>
+            <div class="run-progress"><i id="runProgress"></i></div>
+            <div class="run-metrics">
+              <div><span>Energy so far</span><b id="runKwh">0.0 kWh</b></div>
+              <div><span>Running bill</span><b id="runBill">RM 5.00</b></div>
+            </div>
+            <label class="occupancy-control" for="homeDays"><span>Days at home</span><b><em id="homeDaysValue">30</em> days</b></label>
+            <input id="homeDays" type="range" min="0" max="30" step="1" value="30">
+            <p id="holidayNote">No holiday days in this billing month.</p>
+            <button id="runReset" type="button">Reset simulation</button>
+          </section>
           <div class="weather-pill"><b>32°C</b><span>Kuala Lumpur day</span></div>
           <div class="power-note">Glowing lines show electricity flowing to active appliances</div>
         </div>
