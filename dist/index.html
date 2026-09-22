@@ -32,10 +32,18 @@
             <h1 id="houseTitle">Every switch changes the bill.</h1>
           </div>
           <div class="day-controls" aria-label="Day simulation controls">
-            <button class="play-button" id="playButton" type="button" aria-pressed="false"><span>▶</span> Run a day</button>
+            <div class="play-wrap">
+              <button class="play-button" id="playButton" type="button" aria-pressed="false"><span>▶</span> Simulate a day</button>
+              <small>Watch appliances follow their daily schedule</small>
+            </div>
             <div class="clock-wrap">
               <span id="simTime">07:00</span>
               <label><span class="sr-only">Time of day</span><input id="timeSlider" type="range" min="0" max="1439" value="420"></label>
+            </div>
+            <div class="speed-control" aria-label="Simulation speed">
+              <button class="active" type="button" data-speed="1" aria-pressed="true">1×</button>
+              <button type="button" data-speed="8" aria-pressed="false">8×</button>
+              <button type="button" data-speed="24" aria-pressed="false">24×</button>
             </div>
           </div>
         </div>
@@ -43,8 +51,9 @@
         <div class="scene-wrap" id="sceneWrap">
           <canvas id="houseCanvas" aria-label="Interactive isometric house. Select an appliance to switch it on or off."></canvas>
           <div class="scene-tooltip" id="sceneTooltip" role="status" aria-live="polite"></div>
-          <div class="scene-legend"><span></span> Switch on appliances in the house or below</div>
+          <div class="scene-legend"><span></span><b id="liveLoad">0.00 kW</b><em id="activeCount">0 appliances running</em></div>
           <div class="weather-pill"><b>32°C</b><span>Kuala Lumpur day</span></div>
+          <div class="power-note">Glowing lines show electricity flowing to active appliances</div>
         </div>
 
         <div class="appliance-header">
