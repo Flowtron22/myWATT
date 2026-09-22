@@ -22,7 +22,7 @@ const defaults = [
   { id: 'hood', name: 'Cooker hood', icon: '≋', watts: 180, hours: 1, qty: 1, duty: 1, on: false, start: 18, room: 'Kitchen', note: 'Kitchen smoke and exhaust fan' },
   { id: 'iron', name: 'Clothes iron', icon: '◢', watts: 1000, hours: 0.35, qty: 1, duty: .65, on: false, start: 16, room: 'Yard', variant: 'Dry iron', variantLabel: 'Iron type', variants: [{ label:'Dry iron', watts:1000, duty:.65 },{ label:'Basic steam iron', watts:1400, duty:.65 },{ label:'Cordless steam iron', watts:1800, duty:.55 },{ label:'High-power steam iron', watts:2300, duty:.6 },{ label:'Steam generator', watts:2400, duty:.7 }], note: 'The wattage is peak heating input. The thermostat cycles, so the estimate uses a typical on/off heating pattern.' },
   { id: 'router', name: 'Wi‑Fi router', icon: '⌁', watts: 12, hours: 24, qty: 1, duty: 1, on: true, awayOn: true, start: 0, end: 24, room: 'Study' },
-  { id: 'pc', name: 'Desktop PC', icon: '▣', watts: 350, hours: 4, qty: 1, duty: 0.72, on: true, start: 9, end: 18, room: 'Study' },
+  { id: 'pc', name: 'Desktop PC setup', icon: '▣', watts: 340, hours: 4, qty: 1, duty: 0.72, on: true, start: 9, end: 18, room: 'Study', variant: 'Medium · 1 monitor', variantLabel: 'Workload & screens', variants: [{ label:'Light · 1 monitor', watts:140 },{ label:'Light · 2 monitors', watts:180 },{ label:'Medium · 1 monitor', watts:340 },{ label:'Medium · 2 monitors', watts:380 },{ label:'Heavy · 1 monitor', watts:640 },{ label:'Heavy · 2 monitors', watts:680 }], note: 'Light: documents and browsing. Medium: coding, photo work or casual gaming. Heavy: demanding games, 3D or video rendering. Estimate includes the monitor(s).' },
   { id: 'kettle', name: 'Kettle', icon: '◓', watts: 1800, hours: 0.2, qty: 1, duty: 1, on: true, start: 7, end: 7.3, room: 'Kitchen' },
   { id: 'ev', name: 'Home EV charging', icon: '⚡', watts: 7400, hours: 1.5, qty: 1, duty: 1, on: false, start: 0, room: 'Car porch', variant: 'Wallbox · 7.4 kW', variantLabel: 'Charger type', variants: [{ label:'Portable plug · 2.3 kW', watts:2300 },{ label:'Wallbox · 3.7 kW', watts:3700 },{ label:'Wallbox · 7.4 kW', watts:7400 },{ label:'3-phase · 11 kW', watts:11000 }], note: 'Adds to your home bill when charged at home' },
   { id: 'standby', name: 'Standby load', icon: '◌', watts: 32, hours: 24, qty: 1, duty: 1, on: true, awayOn: true, start: 0, end: 24, room: 'Whole house' }
@@ -340,6 +340,8 @@ const oven = box(.9,1.0,.7,0x27362f,-1.3,.54,-2.0,'oven',0xff7a3d); applianceMes
 const hood = box(1.4,.25,.62,0xb9c9c1,-2.3,1.75,-3.1,'hood',0xf4c84a); applianceMeshes.set('hood', hood);
 box(2.3,.7,.65,0x3c5b51,3,.45,-3.25); // desk
 const pc = box(.85,1.15,.65,0x151e1b,4.8,.62,-3.0,'pc',0x8ae6bd); applianceMeshes.set('pc', pc);
+const pcMonitor1 = box(.72,.46,.1,0x17231f,2.65,1.03,-3.25,'',0x78d9ff);
+const pcMonitor2 = box(.72,.46,.1,0x17231f,3.48,1.03,-3.25,'',0x78d9ff);
 const washer = box(1.1,1.15,1.0,0xe4ebe5,1.15,.62,-2.85,'washer',0x78d9ff); applianceMeshes.set('washer', washer);
 const dryer = box(1.1,1.15,1.0,0xcfd9d2,2.45,.62,-2.85,'dryer',0xff7a3d); applianceMeshes.set('dryer', dryer);
 const iron = box(.62,.24,.3,0xe8ddd0,3.45,.84,-3.25,'iron',0xff7a3d); iron.rotation.y = -.28; applianceMeshes.set('iron', iron);
@@ -396,6 +398,11 @@ function updateSceneState() {
     if (mesh) mesh.scale.y = a.on ? 1.04 : 1;
   });
   const lightsOn = appliances.find(a=>a.id==='lights')?.on;
+  const pcSetup = appliances.find(a=>a.id==='pc');
+  pcMonitor1.visible = Boolean(pcSetup?.on);
+  pcMonitor2.visible = Boolean(pcSetup?.on && pcSetup.variant?.includes('2 monitors'));
+  pcMonitor1.material.emissiveIntensity = isActiveAtTime(pcSetup) ? .5 : .08;
+  pcMonitor2.material.emissiveIntensity = isActiveAtTime(pcSetup) ? .5 : .08;
   roomLights.forEach(light => light.intensity = lightsOn && (simMinute/60 > 17 || simMinute/60 < 6) ? 8 : 0);
   updateLiveLoad();
 }
