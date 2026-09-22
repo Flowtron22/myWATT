@@ -577,11 +577,11 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x0c261f, 15, 28);
+scene.fog = new THREE.Fog(0x063c9d, 15, 28);
 const camera = new THREE.OrthographicCamera(-8, 8, 6, -6, .1, 100);
 camera.position.set(11, 12, 13); camera.lookAt(0,0,0);
-scene.add(new THREE.HemisphereLight(0xfff2c2, 0x142a26, 2.5));
-const sun = new THREE.DirectionalLight(0xffe6a0, 4.2); sun.position.set(7,12,8); sun.castShadow = true; scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xfff4c9, 0x061b55, 2.5));
+const sun = new THREE.DirectionalLight(0xffed9a, 4.2); sun.position.set(7,12,8); sun.castShadow = true; scene.add(sun);
 const group = new THREE.Group(); group.rotation.y = -.08; scene.add(group);
 const applianceMeshes = new Map();
 const roomLights = [];
@@ -589,41 +589,41 @@ function box(w,h,d,color,x,y,z, name='', emissive=0x000000) {
   const material = new THREE.MeshStandardMaterial({ color, roughness: .72, emissive, emissiveIntensity: 0 });
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), material); mesh.position.set(x,y,z); mesh.castShadow = true; mesh.receiveShadow = true; if (name) mesh.userData.applianceId = name; group.add(mesh); return mesh;
 }
-box(13,.3,9,0x24483b,0,-.2,0);
+box(13,.3,9,0x0847a5,0,-.2,0);
 // Room floors and low walls
-box(5.8,.12,4.1,0xdacfae,-3,.02,-2.25); box(5.8,.12,4.1,0xb7cfbe,3,.02,-2.25);
-box(5.8,.12,4.1,0xd7bb92,-3,.02,2.25); box(5.8,.12,4.1,0xa9c5c7,3,.02,2.25);
-box(12,.85,.16,0xf1ead9,0,.55,-4.35); box(.16,.85,8.7,0xf1ead9,-6,.55,0); box(.16,.85,8.7,0xf1ead9,6,.55,0); box(12,.85,.16,0xf1ead9,0,.55,4.35);
-box(.14,.55,8.5,0x5e796f,0,.4,0); box(11.8,.55,.14,0x5e796f,0,.4,0);
+box(5.8,.12,4.1,0xe9dfc8,-3,.02,-2.25); box(5.8,.12,4.1,0xcfe9f8,3,.02,-2.25);
+box(5.8,.12,4.1,0xf0dca8,-3,.02,2.25); box(5.8,.12,4.1,0xc6e0f2,3,.02,2.25);
+box(12,.85,.16,0xfff8e8,0,.55,-4.35); box(.16,.85,8.7,0xfff8e8,-6,.55,0); box(.16,.85,8.7,0xfff8e8,6,.55,0); box(12,.85,.16,0xfff8e8,0,.55,4.35);
+box(.14,.55,8.5,0x1d62c1,0,.4,0); box(11.8,.55,.14,0x1d62c1,0,.4,0);
 // Furniture and appliances; restrained, toy-like geometry
-box(3.1,.65,1.4,0x48665c,-3,.42,3.0); box(1.2,.38,1.2,0xf4c84a,-3,.26,1.8); // sofa/table
-const tv = box(1.7,1.05,.16,0x101916,-5.1,.75,1.3,'tv',0xf4c84a); applianceMeshes.set('tv', tv);
-box(3.2,.55,2.2,0xe8dfca,3,.34,2.55); box(3.2,.16,.22,0x7e9b91,3,1.05,3.58); // bed
-const ac = box(1.55,.48,.42,0xe9eee8,4.5,1.15,.5,'aircon',0x78d9ff); applianceMeshes.set('aircon', ac);
-box(4.8,.68,.72,0x536e61,-3,.43,-3.2); // kitchen bench
-const fridge = box(1.15,2.2,1.0,0xdce5df,-5.0,1.17,-2.1,'fridge',0x8ae6bd); applianceMeshes.set('fridge', fridge);
-const freezer = box(1.25,.8,.9,0xcddbd5,-4.0,.5,-3.15,'freezer',0x78d9ff); applianceMeshes.set('freezer', freezer);
-const rice = box(.65,.6,.65,0xf0eee5,-2.8,.92,-3.15,'rice',0xf4c84a); applianceMeshes.set('rice', rice);
-const kettle = box(.42,.62,.42,0x25362f,-1.75,.92,-3.15,'kettle',0xff7a3d); applianceMeshes.set('kettle', kettle);
-const microwave = box(.8,.48,.52,0x2e4039,-.85,.9,-3.15,'microwave',0xff7a3d); applianceMeshes.set('microwave', microwave);
-const waterpurifier = box(.48,.9,.46,0xe7f0e9,-3.95,1.32,-3.15,'waterpurifier',0x78d9ff); applianceMeshes.set('waterpurifier', waterpurifier);
-const oven = box(.9,1.0,.7,0x27362f,-1.3,.54,-2.0,'oven',0xff7a3d); applianceMeshes.set('oven', oven);
-const hood = box(1.4,.25,.62,0xb9c9c1,-2.3,1.75,-3.1,'hood',0xf4c84a); applianceMeshes.set('hood', hood);
-box(2.3,.7,.65,0x3c5b51,3,.45,-3.25); // desk
-const pc = box(.85,1.15,.65,0x151e1b,4.8,.62,-3.0,'pc',0x8ae6bd); applianceMeshes.set('pc', pc);
-const pcMonitor1 = box(.72,.46,.1,0x17231f,2.65,1.03,-3.25,'',0x78d9ff);
-const pcMonitor2 = box(.72,.46,.1,0x17231f,3.48,1.03,-3.25,'',0x78d9ff);
-const washer = box(1.1,1.15,1.0,0xe4ebe5,1.15,.62,-2.85,'washer',0x78d9ff); applianceMeshes.set('washer', washer);
-const dryer = box(1.1,1.15,1.0,0xcfd9d2,2.45,.62,-2.85,'dryer',0xff7a3d); applianceMeshes.set('dryer', dryer);
-const iron = box(.62,.24,.3,0xe8ddd0,3.45,.84,-3.25,'iron',0xff7a3d); iron.rotation.y = -.28; applianceMeshes.set('iron', iron);
-const heater = box(.56,1.1,.5,0xe7e3d6,5.25,.75,-1.3,'heater',0xff7a3d); applianceMeshes.set('heater', heater);
-const router = box(.58,.16,.42,0x182520,2.1,.86,-3.25,'router',0x8ae6bd); applianceMeshes.set('router', router);
-const ev = box(2.7,.58,1.35,0x315f55,3.4,.05,5.05,'ev',0x8ae6bd); applianceMeshes.set('ev', ev);
-box(.56,.44,.38,0xf4c84a,5.1,.22,4.7); // wallbox
+box(3.1,.65,1.4,0x1764c9,-3,.42,3.0); box(1.2,.38,1.2,0xffd62e,-3,.26,1.8); // sofa/table
+const tv = box(1.7,1.05,.16,0x04194f,-5.1,.75,1.3,'tv',0xffd62e); applianceMeshes.set('tv', tv);
+box(3.2,.55,2.2,0xfff6dc,3,.34,2.55); box(3.2,.16,.22,0x5c91cf,3,1.05,3.58); // bed
+const ac = box(1.55,.48,.42,0xe9f2f8,4.5,1.15,.5,'aircon',0x62c9ff); applianceMeshes.set('aircon', ac);
+box(4.8,.68,.72,0x1764c9,-3,.43,-3.2); // kitchen bench
+const fridge = box(1.15,2.2,1.0,0xe2edf5,-5.0,1.17,-2.1,'fridge',0x62c9ff); applianceMeshes.set('fridge', fridge);
+const freezer = box(1.25,.8,.9,0xd4e4ef,-4.0,.5,-3.15,'freezer',0x62c9ff); applianceMeshes.set('freezer', freezer);
+const rice = box(.65,.6,.65,0xf5f0e5,-2.8,.92,-3.15,'rice',0xffd62e); applianceMeshes.set('rice', rice);
+const kettle = box(.42,.62,.42,0x082b70,-1.75,.92,-3.15,'kettle',0xff7248); applianceMeshes.set('kettle', kettle);
+const microwave = box(.8,.48,.52,0x0a347f,-.85,.9,-3.15,'microwave',0xff7248); applianceMeshes.set('microwave', microwave);
+const waterpurifier = box(.48,.9,.46,0xe7f1f7,-3.95,1.32,-3.15,'waterpurifier',0x62c9ff); applianceMeshes.set('waterpurifier', waterpurifier);
+const oven = box(.9,1.0,.7,0x082b70,-1.3,.54,-2.0,'oven',0xff7248); applianceMeshes.set('oven', oven);
+const hood = box(1.4,.25,.62,0xc7d9e5,-2.3,1.75,-3.1,'hood',0xffd62e); applianceMeshes.set('hood', hood);
+box(2.3,.7,.65,0x1457b6,3,.45,-3.25); // desk
+const pc = box(.85,1.15,.65,0x04194f,4.8,.62,-3.0,'pc',0x62c9ff); applianceMeshes.set('pc', pc);
+const pcMonitor1 = box(.72,.46,.1,0x061f5d,2.65,1.03,-3.25,'',0x62c9ff);
+const pcMonitor2 = box(.72,.46,.1,0x061f5d,3.48,1.03,-3.25,'',0x62c9ff);
+const washer = box(1.1,1.15,1.0,0xe8eff5,1.15,.62,-2.85,'washer',0x62c9ff); applianceMeshes.set('washer', washer);
+const dryer = box(1.1,1.15,1.0,0xd8e3eb,2.45,.62,-2.85,'dryer',0xff7248); applianceMeshes.set('dryer', dryer);
+const iron = box(.62,.24,.3,0xeee3d8,3.45,.84,-3.25,'iron',0xff7248); iron.rotation.y = -.28; applianceMeshes.set('iron', iron);
+const heater = box(.56,1.1,.5,0xeee9dc,5.25,.75,-1.3,'heater',0xff7248); applianceMeshes.set('heater', heater);
+const router = box(.58,.16,.42,0x061f5d,2.1,.86,-3.25,'router',0x62c9ff); applianceMeshes.set('router', router);
+const ev = box(2.7,.58,1.35,0x1457b6,3.4,.05,5.05,'ev',0x62c9ff); applianceMeshes.set('ev', ev);
+box(.56,.44,.38,0xffd62e,5.1,.22,4.7); // wallbox
 // bulbs/fans as interactive tokens
-[[-3,2.1,2.2],[3,2.1,2.2],[-3,2.1,-2.2],[3,2.1,-2.2]].forEach((p,i)=>{ const bulb = new THREE.PointLight(0xffcc55,0,4); bulb.position.set(...p); group.add(bulb); roomLights.push(bulb); const orb = new THREE.Mesh(new THREE.SphereGeometry(.13,12,12), new THREE.MeshBasicMaterial({color:0xf4c84a})); orb.position.set(...p); orb.userData.applianceId='lights'; group.add(orb); if(i===0) applianceMeshes.set('lights',orb); });
-const fan = new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.08,16), new THREE.MeshStandardMaterial({color:0x304f45})); fan.position.set(-2.7,2.05,1.9); fan.userData.applianceId='fan'; group.add(fan); applianceMeshes.set('fan',fan);
-const powerHub = new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.16,18), new THREE.MeshStandardMaterial({color:0xf4c84a,emissive:0xf4c84a,emissiveIntensity:1.5}));
+[[-3,2.1,2.2],[3,2.1,2.2],[-3,2.1,-2.2],[3,2.1,-2.2]].forEach((p,i)=>{ const bulb = new THREE.PointLight(0xffd85a,0,4); bulb.position.set(...p); group.add(bulb); roomLights.push(bulb); const orb = new THREE.Mesh(new THREE.SphereGeometry(.13,12,12), new THREE.MeshBasicMaterial({color:0xffd62e})); orb.position.set(...p); orb.userData.applianceId='lights'; group.add(orb); if(i===0) applianceMeshes.set('lights',orb); });
+const fan = new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.08,16), new THREE.MeshStandardMaterial({color:0x1457b6})); fan.position.set(-2.7,2.05,1.9); fan.userData.applianceId='fan'; group.add(fan); applianceMeshes.set('fan',fan);
+const powerHub = new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.16,18), new THREE.MeshStandardMaterial({color:0xffd62e,emissive:0xffd62e,emissiveIntensity:1.5}));
 powerHub.position.set(0,.22,0); group.add(powerHub);
 const energyFlows = [];
 applianceMeshes.forEach((mesh,id) => {
@@ -631,13 +631,13 @@ applianceMeshes.forEach((mesh,id) => {
   const end = mesh.position.clone(); end.y = Math.max(.24,end.y*.62);
   const mid = new THREE.Vector3(end.x,.24,0);
   const curve = new THREE.CatmullRomCurve3([start,mid,end]);
-  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(24)), new THREE.LineBasicMaterial({color:0xf4c84a,transparent:true,opacity:.08}));
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(24)), new THREE.LineBasicMaterial({color:0xffd62e,transparent:true,opacity:.08}));
   group.add(line);
   const pulses = [0,.5].map(offset => { const orb=new THREE.Mesh(new THREE.SphereGeometry(.075,10,10),new THREE.MeshBasicMaterial({color:0xffe888,transparent:true,opacity:.95})); orb.visible=false; group.add(orb); return {orb,offset}; });
   energyFlows.push({id,curve,line,pulses});
 });
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(40,40), new THREE.MeshStandardMaterial({color:0x0b1d18,roughness:1})); ground.rotation.x=-Math.PI/2; ground.position.y=-.38; ground.receiveShadow=true; scene.add(ground);
-const stars = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({color:0x9ee8ca,size:.06,transparent:true,opacity:0}));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(40,40), new THREE.MeshStandardMaterial({color:0x031644,roughness:1})); ground.rotation.x=-Math.PI/2; ground.position.y=-.38; ground.receiveShadow=true; scene.add(ground);
+const stars = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({color:0x9edcff,size:.06,transparent:true,opacity:0}));
 const starData=[]; for(let i=0;i<220;i++) starData.push((Math.random()-.5)*30,Math.random()*12+3,(Math.random()-.5)*22); stars.geometry.setAttribute('position',new THREE.Float32BufferAttribute(starData,3)); scene.add(stars);
 
 function isActiveAtTime(a) { return modelIsActiveAtTime(a, simMinute, simDay || 1); }
@@ -674,7 +674,7 @@ function updateSceneState() {
 function updateSky() {
   const hour = simMinute/60;
   const daylight = Math.max(0, Math.sin(((hour-6)/12)*Math.PI));
-  const bg = new THREE.Color().lerpColors(new THREE.Color(0x071612), new THREE.Color(0x5c9e92), daylight*.72);
+  const bg = new THREE.Color().lerpColors(new THREE.Color(0x031644), new THREE.Color(0x0870df), daylight*.72);
   renderer.setClearColor(bg,1); scene.fog.color.copy(bg);
   sun.intensity = .8 + daylight*3.8; stars.material.opacity = 1-daylight;
   roomLights.forEach(light => light.intensity = appliances.some(a=>(a.templateId || a.id)==='lights' && isActiveAtTime(a)) && daylight < .25 ? 8 : 0);
