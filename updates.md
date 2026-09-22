@@ -24,12 +24,15 @@ myWATT??? is an educational household electricity planning sandbox by Ureka Game
 - Apply the official RP4 peak and off-peak energy rates for homes below or above 1,500 kWh per month.
 - Treat 2 PM–10 PM on weekdays as peak; weekdays before 2 PM or after 10 PM and all weekends are off-peak.
 - Compare the estimated ToU bill with the General tariff before choosing a plan.
-- Explain the representative 22-weekday and 8-weekend assumption and the smart-meter eligibility requirement.
+- Use a representative 22-weekday and 8-weekend month when splitting ToU energy.
 
 The estimate is for planning and comparison. It is not an official TNB bill.
 
 ## Planning and simulation
 
+- Simplify the main workspace by removing repeated helper copy from the hero, simulation, appliance, scenario, and ToU areas.
+- Show air-conditioner room floor area in square feet and automatically convert room sizes in older saved scenarios.
+- Remove the advanced label-watts and annual-kWh override fields so appliance setup stays approachable.
 - Run a visible billing simulation for any number of days at home from 0 to 30, including holidays when selected always-on appliances continue running.
 - Watch live household demand, accumulated kWh, estimated running bill, time of day, and animated electricity flow.
 - Use 1x, 8x, or 24x simulation speed and reset the run at any time.

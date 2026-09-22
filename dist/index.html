@@ -41,13 +41,11 @@
       <section class="house-panel" aria-labelledby="houseTitle">
         <div class="scene-heading">
           <div>
-            <p class="eyebrow">YOUR HOUSE · 30-DAY ESTIMATE</p>
             <h1 id="houseTitle">Every switch changes the bill.</h1>
           </div>
           <div class="day-controls" aria-label="Day simulation controls">
             <div class="play-wrap">
               <button class="play-button" id="playButton" type="button" aria-pressed="false"><span>▶</span> Run simulation</button>
-              <small>Watch your selected days build a real bill</small>
             </div>
             <div class="clock-wrap">
               <span id="simTime">07:00</span>
@@ -88,7 +86,6 @@
           <div>
             <p class="eyebrow">APPLIANCE DECK</p>
             <h2>Build your routine</h2>
-            <p class="deck-order">Fixed appliance order — cards stay in place while you adjust them.</p>
           </div>
           <div class="preset-row" aria-label="Household presets">
             <button data-preset="careful" type="button">Careful</button>
@@ -108,7 +105,7 @@
             <button id="scenarioLoad" type="button" disabled>Load</button>
             <button id="scenarioDelete" type="button" disabled>Delete</button>
           </div>
-          <p id="scenarioComparison" aria-live="polite">Save a setup to compare its monthly kWh and bill with later changes.</p>
+          <p id="scenarioComparison" aria-live="polite" hidden></p>
         </section>
         <div class="deck-tools">
           <p><b id="includedCount">0 appliances in your home</b><span>Remove anything you do not own. You can add it back later.</span></p>
@@ -139,7 +136,6 @@
             <div><p class="eyebrow">OPTIONAL TNB PLAN</p><h2 id="touTitle">Time of Use (ToU)</h2></div>
             <button class="tou-switch" id="touToggle" type="button" role="switch" aria-checked="false"><span aria-hidden="true"></span><b>Off</b></button>
           </div>
-          <p class="tou-intro">Available to eligible homes with a smart meter. Your appliance start times decide how much energy falls into each rate.</p>
           <div class="tou-periods">
             <div class="peak"><span>WEEKDAY PEAK</span><b>2 PM–10 PM</b><small><em id="touPeakRate">28.52</em> sen/kWh</small></div>
             <div class="offpeak"><span>OFF-PEAK</span><b>Before 2 PM · after 10 PM</b><small><em id="touOffpeakRate">24.43</em> sen/kWh · weekends all day</small></div>
@@ -149,7 +145,6 @@
             <span><i class="offpeak-dot"></i>Off-peak <b id="touOffpeakKwh">0.0 kWh</b></span>
           </div>
           <p class="tou-result" id="touResult">Turn on ToU to apply the time-based rates to your bill.</p>
-          <p class="tou-assumption">Estimate uses a representative 30-day month with 22 weekdays and 8 weekend days. Selected public holidays are not modelled.</p>
         </section>
 
         <div class="score-card">
@@ -169,7 +164,7 @@
 
         <section class="breakdown" aria-labelledby="billTitle">
           <div class="section-title"><h2 id="billTitle">How the bill adds up</h2><button id="infoToggle" type="button" aria-expanded="false">How it works</button></div>
-          <div class="formula-note" id="formulaNote" hidden>Each card converts its everyday input—hours, showers, loads, sessions, distance or energy-label kWh—into monthly energy. The basic model is rated watts × operating factor × usage × quantity. A product's annual-kWh label overrides that estimate. In ToU mode, the typical start time splits energy between weekday peak and off-peak rates; weekends are treated as off-peak. Other tariff components apply to the whole month's kWh. A RM5 minimum monthly charge is retained even at extremely low usage.</div>
+          <div class="formula-note" id="formulaNote" hidden>Each card converts its everyday input—hours, showers, loads, sessions or distance—into monthly energy. The basic model is rated watts × operating factor × usage × quantity. In ToU mode, the typical start time splits energy between weekday peak and off-peak rates; weekends are treated as off-peak. Other tariff components apply to the whole month's kWh. A RM5 minimum monthly charge is retained even at extremely low usage.</div>
           <dl id="billLines"></dl>
           <div class="total-row"><span>Estimated current charge</span><b id="billTotalBottom">RM 0.00</b></div>
         </section>
