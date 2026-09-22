@@ -88,13 +88,6 @@ function calculateBill(kwh = monthlyKwh()) {
 }
 
 function applianceKwh(a) { return a.on ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * usageDaysFor(a) : 0; }
-function sortAppliancesByEnergy(items) {
-  return [...items].sort((a, b) => {
-    const continuousDifference = Number(b.hours >= 23.9) - Number(a.hours >= 23.9);
-    if (continuousDifference) return continuousDifference;
-    return applianceKwh(b) - applianceKwh(a);
-  });
-}
 function holidayBackgroundKwh() {
   const holidayDays = daysPerMonth - daysAtHome;
   return appliances.reduce((sum, a) => sum + (a.on && a.awayOn ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * holidayDays : 0), 0);
@@ -125,7 +118,7 @@ function resetSimulation(resetClock = true) {
 }
 
 function renderAppliances() {
-  grid.innerHTML = sortAppliancesByEnergy(appliances).map(a => {
+  grid.innerHTML = appliances.map(a => {
     const estimatedWatts = wattsFor(a);
     const monthlyKwh = (estimatedWatts / 1000) * a.hours * a.qty * a.duty * usageDaysFor(a);
     const ratingControl = a.stars ? `
