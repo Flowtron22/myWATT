@@ -100,6 +100,13 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer;
 .scenario-controls button, .planning-actions button { min-height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; color: var(--cream); background: transparent; cursor: pointer; }
 .scenario-controls button:disabled { opacity: .4; cursor: not-allowed; }
 .scenario-planner > p { grid-column: 1 / -1; margin: 0; color: #b6c7bf; font-size: .65rem; }
+.deck-tools { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 14px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.13); }
+.deck-tools p { display: grid; gap: 2px; margin: 0; }
+.deck-tools p b { font-size: .76rem; }
+.deck-tools p span { color: var(--muted); font-size: .64rem; }
+.add-appliance-button { flex: 0 0 auto; border: 0; border-radius: 999px; padding: 9px 13px 9px 9px; color: var(--ink); background: var(--yellow); font-size: .72rem; font-weight: 900; cursor: pointer; }
+.add-appliance-button span { display: inline-grid; place-items: center; width: 23px; height: 23px; margin-right: 4px; border-radius: 50%; background: rgba(7,22,18,.12); font-size: 1rem; }
+.add-appliance-button b { color: #5e4a0e; font-size: .62rem; }
 .appliance-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
 .appliance-card { min-width: 0; border: 1px solid var(--line); border-radius: 15px; padding: 12px; background: rgba(255,255,255,.045); transition: border .2s, background .2s, transform .2s; }
 .appliance-card.on { border-color: rgba(244,200,74,.55); background: rgba(244,200,74,.09); }
@@ -117,6 +124,9 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer;
 .on .switch { background: var(--yellow); }
 .on .switch::after { transform: translateX(14px); background: var(--ink); }
 .always-badge { color: var(--ink); background: var(--mint); border-radius: 999px; padding: 5px 7px; font-size: .55rem; letter-spacing: .08em; font-weight: 900; }
+.card-actions { display: flex; align-items: center; gap: 5px; }
+.remove-appliance { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(255,139,106,.35); border-radius: 50%; color: var(--danger); background: transparent; cursor: pointer; font-size: 1rem; line-height: 1; }
+.remove-appliance:hover { color: #fff; background: rgba(255,139,106,.22); }
 .appliance-controls { margin-top: 11px; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
 .appliance-note { margin: 8px 0 0; color: #b6c7bf; font-size: .62rem; line-height: 1.35; }
 .product-options { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: end; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
@@ -227,6 +237,25 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer;
 footer { margin-top: 22px; }
 footer div { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 9px; }
 footer a { color: #1e6750; font-size: .67rem; font-weight: 800; }
+.appliance-dialog { width: min(680px, calc(100vw - 28px)); max-height: min(720px, calc(100vh - 36px)); margin: auto; padding: 0; overflow: hidden; border: 1px solid rgba(138,230,189,.32); border-radius: 21px; color: var(--cream); background: #0b211b; box-shadow: 0 28px 90px rgba(0,0,0,.55); }
+.appliance-dialog::backdrop { background: rgba(2,11,8,.72); backdrop-filter: blur(5px); }
+.dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 19px 12px; border-bottom: 1px solid var(--line); }
+.dialog-heading h2 { font-size: 1.15rem; }
+.dialog-heading button { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; color: var(--cream); background: transparent; cursor: pointer; font-size: 1.25rem; }
+.dialog-intro { margin: 0; padding: 12px 19px 0; color: var(--muted); font-size: .74rem; line-height: 1.45; }
+.catalog-groups { max-height: calc(100vh - 180px); overflow: auto; padding: 14px 19px 20px; }
+.catalog-group + .catalog-group { margin-top: 16px; }
+.catalog-group h3 { margin: 0 0 7px; color: var(--mint); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; }
+.catalog-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.catalog-item { display: grid; grid-template-columns: 33px 1fr auto; align-items: center; gap: 8px; min-width: 0; padding: 9px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.045); }
+.catalog-item > span { width: 33px; height: 33px; display: grid; place-items: center; border-radius: 9px; color: var(--ink); background: #dfe9e2; }
+.catalog-item div { min-width: 0; }
+.catalog-item b, .catalog-item small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.catalog-item b { font-size: .75rem; }
+.catalog-item small { margin-top: 2px; color: var(--muted); font-size: .6rem; }
+.catalog-item button { width: 30px; height: 30px; border: 0; border-radius: 50%; color: var(--ink); background: var(--yellow); cursor: pointer; font-size: 1rem; font-weight: 900; }
+.catalog-empty { margin: 16px 0; padding: 18px; border: 1px dashed var(--line); border-radius: 13px; color: var(--muted); text-align: center; font-size: .76rem; }
+.mobile-bill-bar { display: none; }
 @media (max-width: 1040px) {
   main { grid-template-columns: minmax(0, 1fr) 390px; }
   .house-panel { padding: 22px; }
@@ -239,6 +268,14 @@ footer a { color: #1e6750; font-size: .67rem; font-weight: 800; }
   main { display: block; }
   .bill-panel { box-shadow: 0 -14px 40px rgba(0,0,0,.18); }
   .scene-wrap { height: 440px; }
+  body { padding-bottom: 72px; }
+  .mobile-bill-bar { position: fixed; z-index: 50; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: 1.1fr .85fr .8fr auto; align-items: center; gap: 8px; min-height: 58px; padding: 8px 11px; border: 1px solid rgba(244,200,74,.42); border-radius: 16px; color: var(--cream); background: rgba(7,22,18,.95); box-shadow: 0 12px 40px rgba(0,0,0,.42); backdrop-filter: blur(14px); text-align: left; cursor: pointer; }
+  .mobile-bill-bar span { min-width: 0; }
+  .mobile-bill-bar small, .mobile-bill-bar b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-bill-bar small { color: var(--muted); font-size: .58rem; }
+  .mobile-bill-bar b { margin-top: 2px; color: var(--cream); font-size: .76rem; }
+  .mobile-bill-bar span:first-child b { color: var(--yellow); font-size: .9rem; }
+  .mobile-bill-bar i { color: var(--yellow); font-style: normal; font-size: 1rem; }
 }
 @media (max-width: 560px) {
   .topbar { height: 58px; padding: 0 14px; }
@@ -262,6 +299,11 @@ footer a { color: #1e6750; font-size: .67rem; font-weight: 800; }
   .scenario-controls { justify-content: flex-start; }
   .scenario-planner > p { grid-column: 1; }
   .calibration-inputs { grid-template-columns: 1fr; }
+  .deck-tools { align-items: stretch; display: grid; }
+  .add-appliance-button { width: 100%; }
+  .catalog-list { grid-template-columns: 1fr; }
+  .appliance-dialog { width: calc(100vw - 18px); max-height: calc(100vh - 18px); border-radius: 18px; }
+  .dialog-heading, .dialog-intro, .catalog-groups { padding-left: 14px; padding-right: 14px; }
   .tou-periods { grid-template-columns: 1fr; }
   .appliance-grid { grid-template-columns: 1fr; }
   .bill-amount strong { font-size: 4.4rem; }

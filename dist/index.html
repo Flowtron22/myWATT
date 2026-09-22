@@ -4,8 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#071612">
-  <meta name="description" content="myWATT??! is an interactive Malaysian household electricity planner using RP4 Domestic General and Time-of-Use tariffs.">
-  <title>myWATT??! — Malaysian Electricity Planner</title>
+  <meta name="description" content="Plan your household electricity use, compare Malaysian Domestic General and Time-of-Use rates, and estimate your monthly bill.">
+  <link rel="canonical" href="https://my-watt.vercel.app/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://my-watt.vercel.app/">
+  <meta property="og:title" content="myWATT??? — Malaysian Electricity Planner">
+  <meta property="og:description" content="Plan your household electricity use, compare General and Time-of-Use rates, and estimate your Malaysian bill.">
+  <meta property="og:image" content="https://my-watt.vercel.app/og.png">
+  <meta property="og:image:width" content="1728">
+  <meta property="og:image:height" content="907">
+  <meta property="og:image:alt" content="myWATT household electricity planner with an illuminated Malaysian home">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="myWATT??? — Malaysian Electricity Planner">
+  <meta name="twitter:description" content="Plan household electricity use and estimate your Malaysian bill.">
+  <meta name="twitter:image" content="https://my-watt.vercel.app/og.png">
+  <title>myWATT??? — Malaysian Electricity Planner</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect rx='14' width='64' height='64' fill='%23071612'/%3E%3Cpath d='M12 31 32 13l20 18v22H38V39H26v14H12Z' fill='%23f4c84a'/%3E%3Cpath d='m35 20-11 17h8l-3 13 12-19h-8Z' fill='%23071612'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./styles.css">
@@ -15,7 +28,7 @@
     <header class="topbar">
       <a class="brand" href="#" aria-label="myWATT home">
         <span class="brand-mark">⌁</span>
-        <span class="brand-copy"><span class="brand-name">my<span>WATT??!</span></span><small>by ureka games</small></span>
+        <span class="brand-copy"><span class="brand-name">my<span>WATT???</span></span><small>by ureka games</small></span>
       </a>
       <div class="tariff-stamp">
         <span class="pulse-dot" aria-hidden="true"></span>
@@ -97,10 +110,14 @@
           </div>
           <p id="scenarioComparison" aria-live="polite">Save a setup to compare its monthly kWh and bill with later changes.</p>
         </section>
+        <div class="deck-tools">
+          <p><b id="includedCount">0 appliances in your home</b><span>Remove anything you do not own. You can add it back later.</span></p>
+          <button class="add-appliance-button" id="addApplianceButton" type="button"><span>＋</span> Add appliance <b id="availableCount"></b></button>
+        </div>
         <div class="appliance-grid" id="applianceGrid"></div>
       </section>
 
-      <aside class="bill-panel" aria-labelledby="billTitle">
+      <aside class="bill-panel" id="billPanel" aria-labelledby="billTitle">
         <div class="bill-topline">
           <div>
             <p class="eyebrow">ESTIMATED MONTHLY BILL</p>
@@ -186,6 +203,20 @@
       </aside>
     </main>
   </div>
+  <button class="mobile-bill-bar" id="mobileBillBar" type="button" aria-label="View estimated monthly bill">
+    <span><small>Estimated bill</small><b id="mobileBillTotal">RM 0.00</b></span>
+    <span><small>Monthly use</small><b id="mobileKwhTotal">0 kWh</b></span>
+    <span><small>Plan</small><b id="mobilePlanName">General</b></span>
+    <i aria-hidden="true">↑</i>
+  </button>
+  <dialog class="appliance-dialog" id="applianceDialog" aria-labelledby="applianceDialogTitle">
+    <div class="dialog-heading">
+      <div><p class="eyebrow">APPLIANCE CATALOGUE</p><h2 id="applianceDialogTitle">Add something to your home</h2></div>
+      <button id="closeApplianceDialog" type="button" aria-label="Close appliance catalogue">×</button>
+    </div>
+    <p class="dialog-intro">Choose only what you own. Added appliances keep their normal position in the deck.</p>
+    <div class="catalog-groups" id="catalogGroups"></div>
+  </dialog>
   <script type="module" src="./app.js"></script>
 </body>
 </html>

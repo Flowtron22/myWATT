@@ -1,4 +1,4 @@
-# myWATT??! updates
+# myWATT??? updates
 
 Last updated: 22 September 2026
 
@@ -6,7 +6,16 @@ Repository: https://github.com/Flowtron22/myWATT
 
 ## Current release
 
-myWATT??! is an educational household electricity planning sandbox by Ureka Games for Peninsular Malaysia. It estimates monthly energy use and the current charge using the RP4 domestic tariff model, September 2026 AFA input, applicable protection rules, and a RM5 minimum monthly charge.
+myWATT??? is an educational household electricity planning sandbox by Ureka Games for Peninsular Malaysia. It estimates monthly energy use and the current charge using the RP4 domestic tariff model, September 2026 AFA input, applicable protection rules, and a RM5 minimum monthly charge.
+
+## Mobile household builder
+
+- Remove appliances that are not part of the household without losing their previous settings.
+- Add appliances back from a categorized catalogue.
+- Keep duplicated units separate while letting them be removed directly.
+- Show a sticky mobile summary with the current bill, monthly kWh and tariff plan.
+- Jump from the mobile summary directly to the full bill breakdown.
+- Share a branded link preview with editable Open Graph title and description metadata.
 
 ## Domestic Time of Use
 
