@@ -83,6 +83,20 @@
             <button data-preset="hot" type="button">Hot month</button>
           </div>
         </div>
+        <section class="scenario-planner" aria-labelledby="scenarioTitle">
+          <div>
+            <p class="eyebrow">SCENARIO COMPARISON</p>
+            <h2 id="scenarioTitle">Save a household plan</h2>
+          </div>
+          <div class="scenario-controls">
+            <label><span>Scenario name</span><input id="scenarioName" type="text" maxlength="40" placeholder="Current home"></label>
+            <button id="scenarioSave" type="button">Save current</button>
+            <label><span>Compare with</span><select id="scenarioSelect"><option value="">No saved scenario</option></select></label>
+            <button id="scenarioLoad" type="button" disabled>Load</button>
+            <button id="scenarioDelete" type="button" disabled>Delete</button>
+          </div>
+          <p id="scenarioComparison" aria-live="polite">Save a setup to compare its monthly kWh and bill with later changes.</p>
+        </section>
         <div class="appliance-grid" id="applianceGrid"></div>
       </section>
 
@@ -108,9 +122,19 @@
           <div><p class="eyebrow">HOUSE SCORE</p><h2 id="scoreTitle">Finding your baseline</h2><p id="scoreCopy">Small routine changes can keep you below the costly thresholds.</p></div>
         </div>
 
+        <section class="calibration-card" aria-labelledby="calibrationTitle">
+          <div class="section-title"><div><p class="eyebrow">REAL BILL CHECK</p><h2 id="calibrationTitle">Calibrate against your bill</h2></div></div>
+          <div class="calibration-inputs">
+            <label><span>Actual usage</span><input id="actualKwh" type="number" min="0" step="1" placeholder="kWh"></label>
+            <label><span>Actual bill</span><input id="actualBill" type="number" min="0" step="0.01" placeholder="RM"></label>
+            <label><span>Billing days</span><input id="actualDays" type="number" min="1" max="45" step="1" value="30"></label>
+          </div>
+          <p id="calibrationResult" aria-live="polite">Enter a real bill to see how closely your configured home matches it.</p>
+        </section>
+
         <section class="breakdown" aria-labelledby="billTitle">
           <div class="section-title"><h2 id="billTitle">How the bill adds up</h2><button id="infoToggle" type="button" aria-expanded="false">How it works</button></div>
-          <div class="formula-note" id="formulaNote" hidden>Usage is estimated from watts × hours × quantity × duty cycle × 30 days. Thermostat and motor cycling is included for appliances such as storage heaters, washers and irons. The tariff applies to the whole month's kWh, not appliance-by-appliance. A RM5 minimum monthly charge is retained even at extremely low usage. Actual meter readings, chosen programmes, billing days and rounding can differ.</div>
+          <div class="formula-note" id="formulaNote" hidden>Each card converts its everyday input—hours, showers, loads, sessions, distance or energy-label kWh—into monthly energy. The basic model is rated watts × operating factor × usage × quantity. A product's annual-kWh label overrides that estimate. The tariff applies to the whole month's kWh, not appliance-by-appliance. A RM5 minimum monthly charge is retained even at extremely low usage.</div>
           <dl id="billLines"></dl>
           <div class="total-row"><span>Estimated current charge</span><b id="billTotalBottom">RM 0.00</b></div>
         </section>

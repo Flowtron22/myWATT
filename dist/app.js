@@ -6,7 +6,7 @@ const defaultAfa = 3.67;
 
 const defaults = [
   { id: 'homebase', name: 'House idle load', icon: '⌂', watts: 28, hours: 24, qty: 1, duty: 1, on: true, alwaysOn: true, awayOn: true, start: 0, room: 'Whole house', note: 'Small standby loads left connected' },
-  { id: 'aircon', name: 'Air conditioner', icon: '❄', watts: 1050, hours: 8, qty: 1, duty: 0.68, on: true, start: 22, room: 'Bedroom', variant: '1.5 HP', stars: 5, variants: [{ label:'1.0 HP', watts:720 },{ label:'1.5 HP', watts:1050 },{ label:'2.0 HP', watts:1450 },{ label:'2.5 HP', watts:1850 },{ label:'3.0 HP', watts:2300 }], secondaryVariant: 'Inverter', secondaryVariantLabel: 'Compressor type', secondaryVariants: [{ label:'Inverter', duty:.68 },{ label:'Non-inverter', duty:.85 }], note: 'Inverter units vary compressor speed after the room cools. Non-inverter units repeatedly run at full speed and stop. Actual savings depend on room size, temperature and the model’s energy label.' },
+  { id: 'aircon', name: 'Air conditioner', icon: '❄', watts: 1050, hours: 8, qty: 1, duty: 0.68, on: true, start: 22, room: 'Bedroom', roomSize:22, setpoint:24, variant: '1.5 HP', stars: 5, variants: [{ label:'1.0 HP', watts:720 },{ label:'1.5 HP', watts:1050 },{ label:'2.0 HP', watts:1450 },{ label:'2.5 HP', watts:1850 },{ label:'3.0 HP', watts:2300 }], secondaryVariant: 'Inverter', secondaryVariantLabel: 'Compressor type', secondaryVariants: [{ label:'Inverter', duty:.68 },{ label:'Non-inverter', duty:.85 }], note: 'Inverter units vary compressor speed after the room cools. Non-inverter units repeatedly run at full speed and stop. Room size and thermostat setting adjust the operating estimate.' },
   { id: 'fridge', name: 'Refrigerator', icon: '▥', watts: 150, hours: 24, qty: 1, duty: 0.38, on: true, awayOn: true, start: 0, room: 'Kitchen', variant: '2-door · 300L', variantLabel: 'Fridge type', stars: 4, variants: [{ label:'Mini bar · 90L', watts:70 },{ label:'1-door · 180L', watts:105 },{ label:'2-door · 300L', watts:150 },{ label:'4-door · 500L', watts:240 },{ label:'Side-by-side · 600L', watts:270 }] },
   { id: 'waterpurifier', name: 'Water purifier / dispenser', icon: '◈', watts: 500, hours: 24, qty: 1, duty: .18, on: true, awayOn: true, start: 0, room: 'Kitchen', variant: 'Hot + cold storage dispenser', variantLabel: 'Which kind do you own?', variants: [{ label:'Basic tap / under-sink filter', watts:0, duty:0 },{ label:'Room-temperature purifier', watts:10, duty:.5 },{ label:'Cold + room dispenser', watts:120, duty:.25 },{ label:'Hot + cold storage dispenser', watts:500, duty:.18 },{ label:'Instant-heating hot + cold', watts:2600, duty:.025 },{ label:'Alkaline water ionizer', watts:130, duty:.01 }], note: 'Choose hot + cold storage if the unit keeps tanks of water ready all day. Choose instant-heating if it heats only when you dispense. Basic filters may use no mains electricity.' },
   { id: 'freezer', name: 'Freezer', icon: '▤', watts: 160, hours: 24, qty: 1, duty: 0.42, on: false, awayOn: true, start: 0, room: 'Kitchen', variant: 'Chest · 300L', variantLabel: 'Freezer type', stars: 4, variants: [{ label:'Chest · 150L', watts:110 },{ label:'Chest · 300L', watts:160 },{ label:'Upright · 250L', watts:185 },{ label:'Upright · 400L', watts:240 }] },
@@ -28,6 +28,20 @@ const defaults = [
   { id: 'standby', name: 'Standby load', icon: '◌', watts: 32, hours: 24, qty: 1, duty: 1, on: true, awayOn: true, start: 0, end: 24, room: 'Whole house' }
 ];
 
+const usageProfiles = {
+  heater: { usageMode:'uses-per-day', usesPerDay:2, minutesPerUse:18 },
+  washer: { usageMode:'cycles-per-week', usesPerWeek:7, minutesPerUse:45, usageNoun:'loads' },
+  dryer: { usageMode:'cycles-per-week', usesPerWeek:3, minutesPerUse:63, usageNoun:'loads' },
+  microwave: { usageMode:'cycles-per-week', usesPerWeek:7, minutesPerUse:9, usageNoun:'uses' },
+  oven: { usageMode:'cycles-per-week', usesPerWeek:3, minutesPerUse:70, usageNoun:'sessions' },
+  hood: { usageMode:'cycles-per-week', usesPerWeek:7, minutesPerUse:60, usageNoun:'sessions' },
+  iron: { usageMode:'cycles-per-week', usesPerWeek:2, minutesPerUse:74, usageNoun:'sessions' },
+  rice: { usageMode:'cycles-per-week', usesPerWeek:7, minutesPerUse:66, usageNoun:'cooks' },
+  kettle: { usageMode:'cycles-per-week', usesPerWeek:14, minutesPerUse:6, usageNoun:'boils' },
+  ev: { usageMode:'ev-distance', kmPerMonth:1500, kwhPer100km:18, chargingEfficiency:.9 }
+};
+defaults.forEach(a => Object.assign(a, usageProfiles[a.id] || { daysPerWeek:7 }));
+
 let appliances = structuredClone(defaults);
 let afaRate = defaultAfa;
 let baselineBill = null;
@@ -43,9 +57,11 @@ let lastFrame = performance.now();
 const $ = (selector) => document.querySelector(selector);
 const grid = $('#applianceGrid');
 const currency = (n) => `RM ${Math.abs(n).toFixed(2)}`;
+const escapeHtml = (value) => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 const starMultipliers = { 1: 1.18, 2: 1.09, 3: 1, 4: .91, 5: .82 };
 
 function wattsFor(a) {
+  if (Number(a.customWatts) > 0) return Math.round(Number(a.customWatts));
   const base = a.variants ? (a.variants.find(v => v.label === a.variant)?.watts ?? a.watts) : a.watts;
   return Math.round(base * (a.stars ? starMultipliers[a.stars] : 1));
 }
@@ -68,13 +84,44 @@ function formatHours(hours) {
   return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
 }
 
+function syncUsageHours(a) {
+  if (a.usageMode === 'cycles-per-week') a.hours = Math.min(24, (Number(a.usesPerWeek) || 0) * (Number(a.minutesPerUse) || 0) / 60 / 7);
+  if (a.usageMode === 'uses-per-day') a.hours = Math.min(24, (Number(a.usesPerDay) || 0) * (Number(a.minutesPerUse) || 0) / 60);
+  if (a.usageMode === 'ev-distance') {
+    const energy = (Number(a.kmPerMonth) || 0) * (Number(a.kwhPer100km) || 0) / 100 / Math.max(.5, Number(a.chargingEfficiency) || .9);
+    a.hours = Math.min(24, energy / Math.max(.001, wattsFor(a) / 1000) / daysPerMonth);
+  }
+}
+defaults.forEach(syncUsageHours);
+function operatingFactor(a) {
+  if ((a.templateId || a.id) !== 'aircon') return a.duty;
+  const recommendedArea = { '1.0 HP':15, '1.5 HP':22, '2.0 HP':30, '2.5 HP':38, '3.0 HP':45 }[a.variant] || 22;
+  const roomFactor = Math.min(1.3, Math.max(.8, (Number(a.roomSize) || recommendedArea) / recommendedArea));
+  const temperatureFactor = Math.min(1.3, Math.max(.82, 1 + (24 - (Number(a.setpoint) || 24)) * .06));
+  return Math.min(1, a.duty * roomFactor * temperatureFactor);
+}
+
 function incentiveRate(kwh) {
   const bands = [[200,.25],[250,.245],[300,.225],[350,.21],[400,.17],[450,.145],[500,.12],[550,.105],[600,.09],[650,.075],[700,.055],[750,.045],[800,.04],[850,.025],[900,.01],[1000,.005]];
   return (bands.find(([max]) => kwh <= max) || [0,0])[1];
 }
 
-function usageDaysFor(a) { return a.awayOn ? daysPerMonth : daysAtHome; }
-function monthlyKwh() { return appliances.reduce((sum, a) => sum + (a.on ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * usageDaysFor(a) : 0), 0); }
+function usageDaysFor(a, requestedDays = null) {
+  const baseDays = requestedDays ?? (a.awayOn ? daysPerMonth : daysAtHome);
+  if (a.usageMode || a.hours >= 23.9) return baseDays;
+  return baseDays * Math.min(7, Math.max(1, Number(a.daysPerWeek) || 7)) / 7;
+}
+function applianceEnergyForDays(a, requestedDays = null, includeWhenOff = false) {
+  if (!a.on && !includeWhenOff) return 0;
+  const activeDays = requestedDays ?? (a.awayOn ? daysPerMonth : daysAtHome);
+  if (Number(a.customAnnualKwh) > 0) return Number(a.customAnnualKwh) / 12 * activeDays / daysPerMonth * a.qty;
+  if (a.usageMode === 'ev-distance') {
+    const fullMonth = (Number(a.kmPerMonth) || 0) * (Number(a.kwhPer100km) || 0) / 100 / Math.max(.5, Number(a.chargingEfficiency) || .9) * a.qty;
+    return fullMonth * activeDays / daysPerMonth;
+  }
+  return (wattsFor(a) / 1000) * a.hours * a.qty * operatingFactor(a) * usageDaysFor(a, activeDays);
+}
+function monthlyKwh() { return appliances.reduce((sum, a) => sum + applianceEnergyForDays(a), 0); }
 function calculateBill(kwh = monthlyKwh()) {
   const generationRate = kwh > 1500 ? .3703 : .2703;
   const energy = kwh * generationRate;
@@ -94,14 +141,14 @@ function calculateBill(kwh = monthlyKwh()) {
   return { kwh, generationRate, energy, capacity, network, incentive, afa, retail, kwtbb, sst, subtotal, minimumAdjustment, total, protectedUser };
 }
 
-function applianceKwh(a) { return a.on ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * usageDaysFor(a) : 0; }
+function applianceKwh(a) { return applianceEnergyForDays(a); }
 function holidayBackgroundKwh() {
   const holidayDays = daysPerMonth - daysAtHome;
-  return appliances.reduce((sum, a) => sum + (a.on && a.awayOn ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * holidayDays : 0), 0);
+  return appliances.reduce((sum, a) => sum + (a.on && a.awayOn ? applianceEnergyForDays(a, holidayDays) : 0), 0);
 }
 function updateSimulationPanel() {
   const holidayDays = daysPerMonth - daysAtHome;
-  const shownKwh = runComplete ? runKwh + holidayBackgroundKwh() : runKwh;
+  const shownKwh = runComplete ? monthlyKwh() : runKwh;
   const progress = runComplete ? 1 : (simDay ? Math.min(1, ((simDay - 1) + simMinute / 1440) / daysAtHome) : 0);
   $('#runDay').textContent = runComplete ? daysAtHome : simDay;
   $('#runTarget').textContent = daysAtHome;
@@ -124,10 +171,59 @@ function resetSimulation(resetClock = true) {
   updateSimulationPanel();
 }
 
+function timeInputValue(decimalHour = 0) {
+  const minutes = Math.round((((decimalHour % 24) + 24) % 24) * 60);
+  return `${String(Math.floor(minutes / 60) % 24).padStart(2,'0')}:${String(minutes % 60).padStart(2,'0')}`;
+}
+function renderUsageControl(a) {
+  if (a.usageMode === 'cycles-per-week') return `<div class="usage-pair">
+    <label class="usage-field"><span>${a.usageNoun || 'uses'} / week</span><input type="number" min="0" max="50" step="1" value="${a.usesPerWeek}" data-action="usage-value" data-field="usesPerWeek" data-id="${a.id}"></label>
+    <label class="usage-field"><span>Minutes / ${a.usageNoun === 'loads' ? 'load' : 'use'}</span><input type="number" min="1" max="360" step="1" value="${a.minutesPerUse}" data-action="usage-value" data-field="minutesPerUse" data-id="${a.id}"></label>
+  </div>`;
+  if (a.usageMode === 'uses-per-day') return `<div class="usage-pair">
+    <label class="usage-field"><span>Showers / day</span><input type="number" min="0" max="20" step="1" value="${a.usesPerDay}" data-action="usage-value" data-field="usesPerDay" data-id="${a.id}"></label>
+    <label class="usage-field"><span>Minutes / shower</span><input type="number" min="1" max="60" step="1" value="${a.minutesPerUse}" data-action="usage-value" data-field="minutesPerUse" data-id="${a.id}"></label>
+  </div>`;
+  if (a.usageMode === 'ev-distance') return `<div class="usage-pair">
+    <label class="usage-field"><span>Driving / month (km)</span><input type="number" min="0" max="10000" step="50" value="${a.kmPerMonth}" data-action="usage-value" data-field="kmPerMonth" data-id="${a.id}"></label>
+    <label class="usage-field"><span>kWh / 100 km</span><input type="number" min="8" max="40" step=".5" value="${a.kwhPer100km}" data-action="usage-value" data-field="kwhPer100km" data-id="${a.id}"></label>
+  </div>`;
+  return `<div class="hours-control">
+    <label for="hours-${a.id}"><span>Hours / active day</span><b>${formatHours(a.hours)}h</b></label>
+    <input id="hours-${a.id}" data-action="hours" data-id="${a.id}" type="range" min="0" max="24" step="0.05" value="${a.hours}" ${a.on && !a.alwaysOn ? '' : 'disabled'}>
+  </div>`;
+}
+function renderPlanningDetails(a) {
+  const scheduled = !a.alwaysOn && a.hours < 23.9;
+  const weekly = !a.usageMode && scheduled;
+  const isAircon = (a.templateId || a.id) === 'aircon';
+  return `<details class="planning-details">
+    <summary>Schedule &amp; product label</summary>
+    <div class="planning-grid">
+      ${scheduled ? `<label class="planning-field"><span>Typical start</span><input type="time" value="${timeInputValue(a.start)}" data-action="start-time" data-id="${a.id}"></label>` : ''}
+      ${weekly ? `<label class="planning-field"><span>Days used / week</span><input type="number" min="1" max="7" step="1" value="${a.daysPerWeek || 7}" data-action="usage-value" data-field="daysPerWeek" data-id="${a.id}"></label>` : ''}
+      ${isAircon ? `<label class="planning-field"><span>Room size</span><input type="number" min="5" max="100" step="1" value="${a.roomSize || 22}" data-action="usage-value" data-field="roomSize" data-id="${a.id}"></label><label class="planning-field"><span>Thermostat °C</span><input type="number" min="16" max="30" step="1" value="${a.setpoint || 24}" data-action="usage-value" data-field="setpoint" data-id="${a.id}"></label>` : ''}
+      <label class="planning-field"><span>My label watts</span><input type="number" min="0" max="30000" step="1" value="${a.customWatts || ''}" placeholder="Optional" data-action="custom-watts" data-id="${a.id}"></label>
+      <label class="planning-field"><span>My label kWh / year</span><input type="number" min="0" max="50000" step="1" value="${a.customAnnualKwh || ''}" placeholder="Optional" data-action="custom-annual" data-id="${a.id}"></label>
+      <p class="planning-help">Annual kWh overrides the monthly estimate. Label watts controls the live kW display.</p>
+    </div>
+    ${a.alwaysOn ? '' : `<div class="planning-actions"><button type="button" data-action="duplicate" data-id="${a.id}">Add separate unit</button>${a.templateId ? `<button class="remove-copy" type="button" data-action="remove-copy" data-id="${a.id}">Remove this unit</button>` : ''}</div>`}
+  </details>`;
+}
+function applianceSummaryText(a) {
+  const estimatedWatts = wattsFor(a);
+  const monthly = applianceEnergyForDays(a, null, true);
+  return `${[a.variant, a.secondaryVariant].filter(Boolean).join(' · ')}${a.variant || a.secondaryVariant ? ' · ' : ''}${estimatedWatts.toLocaleString()} W · ${a.on ? '' : 'OFF · '}≈${monthly.toFixed(monthly < 10 ? 1 : 0)} kWh/mo`;
+}
+function refreshApplianceSummary(a) {
+  const summary = grid.querySelector(`[data-card="${a.id}"] .appliance-name small`);
+  if (summary) summary.textContent = applianceSummaryText(a);
+}
+
 function renderAppliances() {
   grid.innerHTML = appliances.map(a => {
     const estimatedWatts = wattsFor(a);
-    const monthlyKwh = (estimatedWatts / 1000) * a.hours * a.qty * a.duty * usageDaysFor(a);
+    const usageControl = renderUsageControl(a);
     const ratingControl = a.stars ? `
         <div class="rating-control">
           <span>Energy rating</span>
@@ -145,27 +241,24 @@ function renderAppliances() {
     const shoppingOptions = a.variants ? `
       <div class="product-options ${a.stars ? '' : 'single-option'} ${a.secondaryVariants ? 'has-secondary' : ''}">
         <div class="variant-control">
-          <label for="variant-${a.id}">${a.variantLabel || (a.id === 'aircon' ? 'Cooling size' : 'Screen size')}</label>
+          <label for="variant-${a.id}">${a.variantLabel || ((a.templateId || a.id) === 'aircon' ? 'Cooling size' : 'Screen size')}</label>
           <select id="variant-${a.id}" data-action="variant" data-id="${a.id}" aria-label="${a.name} size">
             ${a.variants.map(v => `<option value="${v.label}" ${v.label === a.variant ? 'selected' : ''}>${v.label}</option>`).join('')}
           </select>
         </div>
         ${secondaryControl}
         ${ratingControl}
-        <p class="watt-explain">${a.secondaryVariants ? 'Estimated rated input' : 'Estimated input'}: <b>${estimatedWatts.toLocaleString()} W</b>${a.secondaryVariants ? `. Modelled average compressor load while cooling: <b>${Math.round(a.duty * 100)}%</b>` : ''}${a.stars ? '. Star impact is an educational estimate; check the product energy label for its tested kWh.' : '.'}</p>
+        <p class="watt-explain">${a.secondaryVariants ? 'Estimated rated input' : 'Estimated input'}: <b>${estimatedWatts.toLocaleString()} W</b>${a.secondaryVariants ? `. Modelled average compressor load while cooling: <b>${Math.round(operatingFactor(a) * 100)}%</b>` : ''}${a.stars ? '. Star impact is an educational estimate; check the product energy label for its tested kWh.' : '.'}</p>
       </div>` : '';
     return `
     <article class="appliance-card ${a.on ? 'on' : ''} ${a.alwaysOn ? 'always-on' : ''}" data-card="${a.id}">
       <div class="appliance-top">
         <span class="appliance-icon" aria-hidden="true">${a.icon}</span>
-        <div class="appliance-name"><b>${a.name}</b><small>${[a.variant, a.secondaryVariant].filter(Boolean).join(' · ')}${a.variant || a.secondaryVariant ? ' · ' : ''}${estimatedWatts.toLocaleString()} W · ${a.on ? '' : 'OFF · '}≈${monthlyKwh.toFixed(monthlyKwh < 10 ? 1 : 0)} kWh/mo</small></div>
+        <div class="appliance-name"><b>${a.name}</b><small>${applianceSummaryText(a)}</small></div>
         ${a.alwaysOn ? '<span class="always-badge">BASE</span>' : `<button class="switch" type="button" data-action="toggle" data-id="${a.id}" aria-label="${a.on ? 'Switch off' : 'Switch on'} ${a.name}" aria-pressed="${a.on}"></button>`}
       </div>
       <div class="appliance-controls">
-        <div class="hours-control">
-          <label for="hours-${a.id}"><span>Hours / day</span><b>${formatHours(a.hours)}h</b></label>
-          <input id="hours-${a.id}" data-action="hours" data-id="${a.id}" type="range" min="0" max="24" step="0.05" value="${a.hours}" ${a.on && !a.alwaysOn ? '' : 'disabled'}>
-        </div>
+        ${usageControl}
         ${a.alwaysOn ? '' : `<div class="qty-control" aria-label="Quantity">
           <button type="button" data-action="qty-down" data-id="${a.id}" aria-label="Reduce ${a.name} quantity">−</button>
           <span>${a.qty}</span>
@@ -174,6 +267,7 @@ function renderAppliances() {
       </div>
       ${a.note ? `<p class="appliance-note">${a.note}</p>` : ''}
       ${shoppingOptions}
+      ${renderPlanningDetails(a)}
     </article>`;
   }).join('');
 }
@@ -217,13 +311,15 @@ function updateBill(announce = false) {
   const ranked = appliances.filter(a => a.on && !a.alwaysOn).sort((a,c) => applianceKwh(c) - applianceKwh(a));
   const top = ranked[0];
   if (top) {
-    const oneHour = (wattsFor(top) / 1000) * top.qty * top.duty * daysPerMonth;
+    const oneHour = (wattsFor(top) / 1000) * top.qty * operatingFactor(top) * daysPerMonth;
     $('#coachTitle').textContent = `Trim ${top.name.toLowerCase()} by one hour`;
     $('#coachCopy').textContent = `Your biggest load uses about ${applianceKwh(top).toFixed(0)} kWh/month. One hour less per day removes roughly ${oneHour.toFixed(0)} kWh before tariff effects.`;
   } else {
     $('#coachTitle').textContent = 'Only the connected-home baseline remains';
     $('#coachCopy').textContent = 'The estimate stays at the RM5 domestic minimum charge even when every optional appliance is switched off.';
   }
+  updateScenarioComparison(b);
+  updateCalibration(b);
   updateSceneState();
   if (announce) $('#billTotal').setAttribute('aria-label', `Estimated bill ${currency(b.total)}`);
 }
@@ -236,15 +332,49 @@ function mutateAppliance(id, mutator) {
   renderAppliances();
   updateBill(true);
 }
+function duplicateAppliance(id) {
+  const index = appliances.findIndex(item => item.id === id);
+  if (index < 0) return;
+  const source = appliances[index];
+  const templateId = source.templateId || source.id;
+  const baseName = defaults.find(item => item.id === templateId)?.name || source.name.replace(/ \d+$/, '');
+  const siblingCount = appliances.filter(item => item.id === templateId || item.templateId === templateId).length;
+  const copy = structuredClone(source);
+  copy.id = `${templateId}-copy-${Date.now().toString(36)}`;
+  copy.templateId = templateId;
+  copy.name = `${baseName} ${siblingCount + 1}`;
+  copy.qty = 1;
+  appliances.splice(index + 1, 0, copy);
+  resetSimulation(false); renderAppliances(); updateBill(true);
+}
+function removeApplianceCopy(id) {
+  const index = appliances.findIndex(item => item.id === id && item.templateId);
+  if (index < 0) return;
+  appliances.splice(index, 1);
+  resetSimulation(false); renderAppliances(); updateBill(true);
+}
 
 grid.addEventListener('input', (event) => {
   const id = event.target.dataset.id;
   if (event.target.dataset.action === 'hours') mutateAppliance(id, a => a.hours = Number(event.target.value));
+  if (event.target.dataset.action === 'usage-value') {
+    const a = appliances.find(item => item.id === id); if (!a) return;
+    a[event.target.dataset.field] = Number(event.target.value); syncUsageHours(a); resetSimulation(false); updateBill(true); refreshApplianceSummary(a);
+  }
+  if (event.target.dataset.action === 'custom-watts' || event.target.dataset.action === 'custom-annual') {
+    const a = appliances.find(item => item.id === id); if (!a) return;
+    const key = event.target.dataset.action === 'custom-watts' ? 'customWatts' : 'customAnnualKwh';
+    a[key] = Math.max(0, Number(event.target.value) || 0); syncUsageHours(a); resetSimulation(false); updateBill(true); refreshApplianceSummary(a);
+  }
 });
 grid.addEventListener('change', (event) => {
   const id = event.target.dataset.id;
   if (event.target.dataset.action === 'variant') mutateAppliance(id, a => selectVariant(a, event.target.value));
   if (event.target.dataset.action === 'secondary-variant') mutateAppliance(id, a => selectSecondaryVariant(a, event.target.value));
+  if (event.target.dataset.action === 'usage-value') mutateAppliance(id, a => { a[event.target.dataset.field] = Number(event.target.value); syncUsageHours(a); });
+  if (event.target.dataset.action === 'start-time') mutateAppliance(id, a => { const [h,m] = event.target.value.split(':').map(Number); a.start = h + m / 60; });
+  if (event.target.dataset.action === 'custom-watts') mutateAppliance(id, a => { a.customWatts = Math.max(0, Number(event.target.value) || 0); syncUsageHours(a); });
+  if (event.target.dataset.action === 'custom-annual') mutateAppliance(id, a => a.customAnnualKwh = Math.max(0, Number(event.target.value) || 0));
 });
 grid.addEventListener('click', (event) => {
   const button = event.target.closest('button[data-action]');
@@ -254,6 +384,8 @@ grid.addEventListener('click', (event) => {
   if (action === 'qty-up') mutateAppliance(id, a => a.qty = Math.min(a.id === 'lights' ? 24 : 6, a.qty + 1));
   if (action === 'qty-down') mutateAppliance(id, a => a.qty = Math.max(1, a.qty - 1));
   if (action === 'stars') mutateAppliance(id, a => a.stars = Number(button.dataset.stars));
+  if (action === 'duplicate') duplicateAppliance(id);
+  if (action === 'remove-copy') removeApplianceCopy(id);
 });
 
 const presets = {
@@ -264,9 +396,73 @@ const presets = {
 document.querySelectorAll('[data-preset]').forEach(button => button.addEventListener('click', () => {
   appliances = structuredClone(defaults);
   const config = presets[button.dataset.preset];
-  Object.entries(config).forEach(([id,[hours,qty]]) => { const a = appliances.find(x => x.id === id); a.hours = hours; a.qty = qty; });
+  Object.entries(config).forEach(([id,[hours,qty]]) => { const a = appliances.find(x => x.id === id); a.hours = hours; a.qty = qty; if (a.usageMode === 'uses-per-day') a.minutesPerUse = hours * 60 / Math.max(1, a.usesPerDay); });
   resetSimulation(); renderAppliances(); updateBill(true);
 }));
+
+const scenarioStorageKey = 'rumahwatt-scenarios-v1';
+function readScenarios() {
+  try { const saved = JSON.parse(localStorage.getItem(scenarioStorageKey) || '[]'); return Array.isArray(saved) ? saved : []; }
+  catch { return []; }
+}
+function writeScenarios(items) { localStorage.setItem(scenarioStorageKey, JSON.stringify(items.slice(-12))); }
+function refreshScenarioSelect(selectedId = '') {
+  const select = $('#scenarioSelect');
+  const scenarios = readScenarios();
+  select.innerHTML = '<option value="">No saved scenario</option>' + scenarios.map(s => `<option value="${escapeHtml(s.id)}" ${s.id === selectedId ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('');
+  const hasSelection = Boolean(select.value);
+  $('#scenarioLoad').disabled = !hasSelection;
+  $('#scenarioDelete').disabled = !hasSelection;
+  updateScenarioComparison(calculateBill());
+}
+function updateScenarioComparison(currentBill = calculateBill()) {
+  const selected = readScenarios().find(s => s.id === $('#scenarioSelect')?.value);
+  const output = $('#scenarioComparison');
+  if (!output) return;
+  if (!selected) { output.textContent = 'Save a setup to compare its monthly kWh and bill with later changes.'; return; }
+  const kwhDifference = currentBill.kwh - selected.kwh;
+  const billDifference = currentBill.total - selected.bill;
+  output.textContent = `Compared with ${selected.name}: ${kwhDifference >= 0 ? '+' : '−'}${Math.abs(kwhDifference).toFixed(1)} kWh and ${billDifference >= 0 ? '+' : '−'}RM ${Math.abs(billDifference).toFixed(2)} per month.`;
+}
+$('#scenarioSave').addEventListener('click', () => {
+  const name = $('#scenarioName').value.trim() || `Scenario ${readScenarios().length + 1}`;
+  const bill = calculateBill();
+  const scenarios = readScenarios();
+  const saved = { id:`scenario-${Date.now()}`, name, appliances:structuredClone(appliances), afaRate, daysAtHome, kwh:bill.kwh, bill:bill.total };
+  scenarios.push(saved); writeScenarios(scenarios); $('#scenarioName').value = ''; refreshScenarioSelect(saved.id);
+});
+$('#scenarioSelect').addEventListener('change', () => refreshScenarioSelect($('#scenarioSelect').value));
+$('#scenarioLoad').addEventListener('click', () => {
+  const saved = readScenarios().find(s => s.id === $('#scenarioSelect').value); if (!saved) return;
+  appliances = structuredClone(saved.appliances); appliances.forEach(syncUsageHours); afaRate = saved.afaRate; daysAtHome = saved.daysAtHome;
+  $('#homeDays').value = daysAtHome; $('#afaSlider').value = afaRate; resetSimulation(); renderAppliances(); updateAfaLabel(); updateBill(true);
+});
+$('#scenarioDelete').addEventListener('click', () => {
+  const id = $('#scenarioSelect').value; if (!id) return;
+  writeScenarios(readScenarios().filter(s => s.id !== id)); refreshScenarioSelect();
+});
+
+function updateCalibration(currentBill = calculateBill()) {
+  const actualKwh = Number($('#actualKwh')?.value);
+  const actualBill = Number($('#actualBill')?.value);
+  const actualDays = Math.max(1, Number($('#actualDays')?.value) || 30);
+  const output = $('#calibrationResult'); if (!output) return;
+  if (!(actualKwh > 0) && !(actualBill > 0)) { output.textContent = 'Enter a real bill to see how closely your configured home matches it.'; return; }
+  const normalizedKwh = actualKwh > 0 ? actualKwh / actualDays * 30 : null;
+  const parts = [];
+  if (normalizedKwh) {
+    const explained = currentBill.kwh / normalizedKwh * 100;
+    parts.push(`Your setup explains about ${Math.round(explained)}% of the bill's ${normalizedKwh.toFixed(0)} kWh 30-day equivalent`);
+  }
+  if (actualBill > 0) {
+    const normalizedBill = actualBill / actualDays * 30;
+    const difference = currentBill.total - normalizedBill;
+    parts.push(`the estimate is ${difference >= 0 ? 'RM ' + difference.toFixed(2) + ' higher' : 'RM ' + Math.abs(difference).toFixed(2) + ' lower'} than the 30-day bill equivalent`);
+  }
+  output.textContent = `${parts.join('; ')}.`;
+}
+['actualKwh','actualBill','actualDays'].forEach(id => $(`#${id}`).addEventListener('input', () => updateCalibration(calculateBill())));
+refreshScenarioSelect();
 
 $('#resetButton').addEventListener('click', () => { appliances = structuredClone(defaults); afaRate = defaultAfa; daysAtHome = 30; $('#homeDays').value = daysAtHome; $('#afaSlider').value = defaultAfa; baselineBill = null; resetSimulation(); renderAppliances(); updateAfaLabel(); updateBill(true); });
 $('#infoToggle').addEventListener('click', () => { const note = $('#formulaNote'); note.hidden = !note.hidden; $('#infoToggle').setAttribute('aria-expanded', String(!note.hidden)); });
@@ -388,26 +584,28 @@ function isActiveAtTime(a) {
 }
 function updateLiveLoad() {
   const active = appliances.filter(isActiveAtTime);
-  const kw = active.reduce((sum,a) => sum + wattsFor(a) * a.qty * a.duty, 0) / 1000;
+  const kw = active.reduce((sum,a) => sum + wattsFor(a) * a.qty * operatingFactor(a), 0) / 1000;
   $('#liveLoad').textContent = `${kw.toFixed(2)} kW`;
   $('#activeCount').textContent = `${active.length} appliance${active.length === 1 ? '' : 's'} running`;
   energyFlows.forEach(flow => {
-    const on = active.some(a => a.id === flow.id);
+    const on = active.some(a => (a.templateId || a.id) === flow.id);
     flow.line.material.opacity = on ? .42 : .045;
     flow.pulses.forEach(p => p.orb.visible = on);
   });
 }
 function liveLoadKw() {
-  return appliances.filter(isActiveAtTime).reduce((sum,a) => sum + wattsFor(a) * a.qty * a.duty, 0) / 1000;
+  return appliances.filter(isActiveAtTime).reduce((sum,a) => sum + wattsFor(a) * a.qty * operatingFactor(a), 0) / 1000;
 }
 function updateSceneState() {
-  appliances.forEach(a => {
-    const mesh = applianceMeshes.get(a.id);
-    if (mesh?.material?.emissive) mesh.material.emissiveIntensity = isActiveAtTime(a) ? .9 : (a.on ? .16 : 0);
-    if (mesh) mesh.scale.y = a.on ? 1.04 : 1;
+  applianceMeshes.forEach((mesh, id) => {
+    const related = appliances.filter(a => (a.templateId || a.id) === id);
+    const active = related.some(isActiveAtTime);
+    const enabled = related.some(a => a.on);
+    if (mesh?.material?.emissive) mesh.material.emissiveIntensity = active ? .9 : (enabled ? .16 : 0);
+    mesh.scale.y = enabled ? 1.04 : 1;
   });
-  const lightsOn = appliances.find(a=>a.id==='lights')?.on;
-  const pcSetup = appliances.find(a=>a.id==='pc');
+  const lightsOn = appliances.some(a=>(a.templateId || a.id)==='lights' && a.on);
+  const pcSetup = appliances.find(a=>(a.templateId || a.id)==='pc' && a.on);
   pcMonitor1.visible = Boolean(pcSetup?.on);
   pcMonitor2.visible = Boolean(pcSetup?.on && pcSetup.variant?.includes('2 monitors'));
   pcMonitor1.material.emissiveIntensity = isActiveAtTime(pcSetup) ? .5 : .08;
@@ -421,7 +619,7 @@ function updateSky() {
   const bg = new THREE.Color().lerpColors(new THREE.Color(0x071612), new THREE.Color(0x5c9e92), daylight*.72);
   renderer.setClearColor(bg,1); scene.fog.color.copy(bg);
   sun.intensity = .8 + daylight*3.8; stars.material.opacity = 1-daylight;
-  roomLights.forEach(light => light.intensity = appliances.find(a=>a.id==='lights')?.on && daylight < .25 ? 8 : 0);
+  roomLights.forEach(light => light.intensity = appliances.some(a=>(a.templateId || a.id)==='lights' && a.on) && daylight < .25 ? 8 : 0);
 }
 
 const pointer = new THREE.Vector2(), raycaster = new THREE.Raycaster();
@@ -461,7 +659,7 @@ function animate(now) {
     updateSimulationPanel();
   }
   lastFrame=now;
-  const fanA=appliances.find(a=>a.id==='fan'); if(fanA && isActiveAtTime(fanA)) fan.rotation.y += .07;
+  const fanA=appliances.find(a=>(a.templateId || a.id)==='fan' && isActiveAtTime(a)); if(fanA) fan.rotation.y += .07;
   energyFlows.forEach((flow,flowIndex) => flow.pulses.forEach(p => {
     if (!p.orb.visible) return;
     const progress = (now*.00034*(1+Math.min(simSpeed,8)*.06) + p.offset + flowIndex*.083) % 1;
@@ -469,14 +667,13 @@ function animate(now) {
     const pulse = .72 + Math.sin(now*.012 + flowIndex)*.24;
     p.orb.scale.setScalar(pulse);
   }));
-  appliances.forEach((a,index) => {
-    const mesh=applianceMeshes.get(a.id); if(!mesh) return;
+  [...applianceMeshes.entries()].forEach(([id,mesh],index) => {
     if(mesh.userData.baseY===undefined) mesh.userData.baseY=mesh.position.y;
-    const active=isActiveAtTime(a);
+    const active=appliances.some(a=>(a.templateId || a.id)===id && isActiveAtTime(a));
     mesh.position.y=mesh.userData.baseY+(active?Math.sin(now*.004+index)*.025:0);
     if(active && mesh.material?.emissive) mesh.material.emissiveIntensity=.72+Math.sin(now*.006+index)*.24;
   });
-  if(isActiveAtTime(appliances.find(a=>a.id==='tv'))) tv.material.emissiveIntensity=.55+Math.random()*.55;
+  if(appliances.some(a=>(a.templateId || a.id)==='tv' && isActiveAtTime(a))) tv.material.emissiveIntensity=.55+Math.random()*.55;
   powerHub.rotation.y += .012;
   powerHub.scale.setScalar(.94+Math.sin(now*.006)*.08);
   renderer.render(scene,camera);
