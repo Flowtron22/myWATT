@@ -1,6 +1,6 @@
-# RumahWatt
+# myWATT??!
 
-An interactive household electricity-planning sandbox for Peninsular Malaysia. Configure appliances and routines, simulate a billing month, and explore how usage changes the estimated bill.
+An interactive household electricity-planning sandbox by Ureka Games for Peninsular Malaysia. Configure appliances and routines, simulate a billing month, compare Domestic General with Time of Use, and explore how usage changes the estimated bill.
 
 ## Run locally
 

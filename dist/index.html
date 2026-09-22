@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#071612">
-  <meta name="description" content="An interactive Malaysian home electricity bill simulator using the RP4 domestic tariff and September 2026 AFA.">
-  <title>RumahWatt — Malaysian Electricity Simulator</title>
+  <meta name="description" content="myWATT??! is an interactive Malaysian household electricity planner using RP4 Domestic General and Time-of-Use tariffs.">
+  <title>myWATT??! — Malaysian Electricity Planner</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect rx='14' width='64' height='64' fill='%23071612'/%3E%3Cpath d='M12 31 32 13l20 18v22H38V39H26v14H12Z' fill='%23f4c84a'/%3E%3Cpath d='m35 20-11 17h8l-3 13 12-19h-8Z' fill='%23071612'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./styles.css">
@@ -13,9 +13,9 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <a class="brand" href="#" aria-label="RumahWatt home">
+      <a class="brand" href="#" aria-label="myWATT home">
         <span class="brand-mark">⌁</span>
-        <span>RUMAH<span>WATT</span></span>
+        <span class="brand-copy"><span class="brand-name">my<span>WATT??!</span></span><small>by ureka games</small></span>
       </a>
       <div class="tariff-stamp">
         <span class="pulse-dot" aria-hidden="true"></span>
@@ -104,7 +104,7 @@
         <div class="bill-topline">
           <div>
             <p class="eyebrow">ESTIMATED MONTHLY BILL</p>
-            <p class="bill-note">Domestic General · RP4</p>
+            <p class="bill-note" id="billPlanName">Domestic General · RP4</p>
           </div>
           <span class="status-badge" id="protectionBadge">Protected</span>
         </div>
@@ -116,6 +116,24 @@
           <div class="meter-labels"><span><b id="kwhTotal">0</b> kWh / month</span><span id="thresholdText">800 kWh protection</span></div>
           <div class="meter-track"><div class="meter-fill" id="meterFill"></div><i class="threshold-mark" aria-hidden="true"></i></div>
         </div>
+
+        <section class="tou-card" aria-labelledby="touTitle">
+          <div class="tou-heading">
+            <div><p class="eyebrow">OPTIONAL TNB PLAN</p><h2 id="touTitle">Time of Use (ToU)</h2></div>
+            <button class="tou-switch" id="touToggle" type="button" role="switch" aria-checked="false"><span aria-hidden="true"></span><b>Off</b></button>
+          </div>
+          <p class="tou-intro">Available to eligible homes with a smart meter. Your appliance start times decide how much energy falls into each rate.</p>
+          <div class="tou-periods">
+            <div class="peak"><span>WEEKDAY PEAK</span><b>2 PM–10 PM</b><small><em id="touPeakRate">28.52</em> sen/kWh</small></div>
+            <div class="offpeak"><span>OFF-PEAK</span><b>Before 2 PM · after 10 PM</b><small><em id="touOffpeakRate">24.43</em> sen/kWh · weekends all day</small></div>
+          </div>
+          <div class="tou-split" aria-live="polite">
+            <span><i class="peak-dot"></i>Peak <b id="touPeakKwh">0.0 kWh</b></span>
+            <span><i class="offpeak-dot"></i>Off-peak <b id="touOffpeakKwh">0.0 kWh</b></span>
+          </div>
+          <p class="tou-result" id="touResult">Turn on ToU to apply the time-based rates to your bill.</p>
+          <p class="tou-assumption">Estimate uses a representative 30-day month with 22 weekdays and 8 weekend days. Selected public holidays are not modelled.</p>
+        </section>
 
         <div class="score-card">
           <div class="score-ring" id="scoreRing"><span id="scoreValue">0</span><small>/100</small></div>
@@ -134,7 +152,7 @@
 
         <section class="breakdown" aria-labelledby="billTitle">
           <div class="section-title"><h2 id="billTitle">How the bill adds up</h2><button id="infoToggle" type="button" aria-expanded="false">How it works</button></div>
-          <div class="formula-note" id="formulaNote" hidden>Each card converts its everyday input—hours, showers, loads, sessions, distance or energy-label kWh—into monthly energy. The basic model is rated watts × operating factor × usage × quantity. A product's annual-kWh label overrides that estimate. The tariff applies to the whole month's kWh, not appliance-by-appliance. A RM5 minimum monthly charge is retained even at extremely low usage.</div>
+          <div class="formula-note" id="formulaNote" hidden>Each card converts its everyday input—hours, showers, loads, sessions, distance or energy-label kWh—into monthly energy. The basic model is rated watts × operating factor × usage × quantity. A product's annual-kWh label overrides that estimate. In ToU mode, the typical start time splits energy between weekday peak and off-peak rates; weekends are treated as off-peak. Other tariff components apply to the whole month's kWh. A RM5 minimum monthly charge is retained even at extremely low usage.</div>
           <dl id="billLines"></dl>
           <div class="total-row"><span>Estimated current charge</span><b id="billTotalBottom">RM 0.00</b></div>
         </section>
@@ -163,7 +181,7 @@
 
         <footer>
           <p>Educational estimate for a normal monthly billing cycle in Peninsular Malaysia. Not an official TNB bill.</p>
-          <div><a href="https://myenergystats.st.gov.my/documents/d/guest/tariff-tnb-pdf-1" target="_blank" rel="noreferrer">Official tariff</a><a href="https://www.mof.gov.my/portal/en/news/press-citations/electricity-bill-protection-for-domestic-users-expanded-to-800-kwh-pm-anwar" target="_blank" rel="noreferrer">800 kWh protection</a><a href="https://www.melp.my/sites/default/files/2025-09/Tariff-Literacy.pdf" target="_blank" rel="noreferrer">Efficiency rates</a></div>
+          <div><a href="https://myenergystats.st.gov.my/documents/d/guest/tariff-tnb-pdf-1" target="_blank" rel="noreferrer">Official tariff</a><a href="https://www.mytnb.com.my/tariff/index.html" target="_blank" rel="noreferrer">Official ToU periods</a><a href="https://www.mof.gov.my/portal/en/news/press-citations/electricity-bill-protection-for-domestic-users-expanded-to-800-kwh-pm-anwar" target="_blank" rel="noreferrer">800 kWh protection</a><a href="https://www.melp.my/sites/default/files/2025-09/Tariff-Literacy.pdf" target="_blank" rel="noreferrer">Efficiency rates</a></div>
         </footer>
       </aside>
     </main>

@@ -3,6 +3,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.m
 const protectionThreshold = 800;
 const daysPerMonth = 30;
 const defaultAfa = 3.67;
+const representativeWeekdays = 22;
 
 const defaults = [
   { id: 'homebase', name: 'House idle load', icon: '⌂', watts: 28, hours: 24, qty: 1, duty: 1, on: true, alwaysOn: true, awayOn: true, start: 0, room: 'Whole house', note: 'Small standby loads left connected' },
@@ -44,6 +45,7 @@ defaults.forEach(a => Object.assign(a, usageProfiles[a.id] || { daysPerWeek:7 })
 
 let appliances = structuredClone(defaults);
 let afaRate = defaultAfa;
+let touEnabled = false;
 let baselineBill = null;
 let simMinute = 420;
 let playing = false;
@@ -51,6 +53,8 @@ let simSpeed = 1;
 let daysAtHome = 30;
 let simDay = 0;
 let runKwh = 0;
+let runPeakKwh = 0;
+let runOffpeakKwh = 0;
 let runComplete = false;
 let lastFrame = performance.now();
 
@@ -122,9 +126,42 @@ function applianceEnergyForDays(a, requestedDays = null, includeWhenOff = false)
   return (wattsFor(a) / 1000) * a.hours * a.qty * operatingFactor(a) * usageDaysFor(a, activeDays);
 }
 function monthlyKwh() { return appliances.reduce((sum, a) => sum + applianceEnergyForDays(a), 0); }
-function calculateBill(kwh = monthlyKwh()) {
-  const generationRate = kwh > 1500 ? .3703 : .2703;
-  const energy = kwh * generationRate;
+function overlapHours(start, duration, windowStart, windowEnd) {
+  const normalizedStart = ((Number(start) || 0) % 24 + 24) % 24;
+  const safeDuration = Math.min(24, Math.max(0, Number(duration) || 0));
+  if (safeDuration >= 24) return windowEnd - windowStart;
+  const intervalEnd = normalizedStart + safeDuration;
+  let overlap = 0;
+  for (const offset of [-24, 0, 24]) {
+    const startAt = windowStart + offset;
+    const endAt = windowEnd + offset;
+    overlap += Math.max(0, Math.min(intervalEnd, endAt) - Math.max(normalizedStart, startAt));
+  }
+  return Math.min(safeDuration, overlap);
+}
+function touEnergySplit(kwhOverride = null) {
+  const totalKwh = monthlyKwh();
+  const weekdayShare = representativeWeekdays / daysPerMonth;
+  const scheduledPeakKwh = appliances.reduce((sum, a) => {
+    const energy = applianceEnergyForDays(a);
+    const duration = Math.min(24, Math.max(0, Number(a.hours) || 0));
+    if (!energy || !duration) return sum;
+    const weekdayPeakShare = overlapHours(a.start, duration, 14, 22) / duration;
+    return sum + energy * weekdayShare * weekdayPeakShare;
+  }, 0);
+  const requestedKwh = kwhOverride === null ? totalKwh : Math.max(0, Number(kwhOverride) || 0);
+  const scale = totalKwh > 0 ? requestedKwh / totalKwh : 0;
+  const peakKwh = Math.min(requestedKwh, scheduledPeakKwh * scale);
+  return { peakKwh, offpeakKwh: Math.max(0, requestedKwh - peakKwh) };
+}
+function calculateBill(kwh = monthlyKwh(), useTou = touEnabled, splitOverride = null) {
+  const split = splitOverride || touEnergySplit(kwh);
+  const highUsage = kwh > 1500;
+  const generalRate = highUsage ? .3703 : .2703;
+  const peakRate = highUsage ? .3852 : .2852;
+  const offpeakRate = highUsage ? .3443 : .2443;
+  const energy = useTou ? split.peakKwh * peakRate + split.offpeakKwh * offpeakRate : kwh * generalRate;
+  const generationRate = kwh ? energy / kwh : (useTou ? offpeakRate : generalRate);
   const capacity = kwh * .0455;
   const network = kwh * .1285;
   const incentive = kwh * incentiveRate(kwh);
@@ -138,7 +175,7 @@ function calculateBill(kwh = monthlyKwh()) {
   const subtotal = energy + capacity + network + afa + retail - incentive + kwtbb + sst;
   const minimumAdjustment = Math.max(0, 5 - subtotal);
   const total = Math.max(5, subtotal);
-  return { kwh, generationRate, energy, capacity, network, incentive, afa, retail, kwtbb, sst, subtotal, minimumAdjustment, total, protectedUser };
+  return { kwh, generationRate, generalRate, peakRate, offpeakRate, peakKwh:split.peakKwh, offpeakKwh:split.offpeakKwh, useTou, energy, capacity, network, incentive, afa, retail, kwtbb, sst, subtotal, minimumAdjustment, total, protectedUser };
 }
 
 function applianceKwh(a) { return applianceEnergyForDays(a); }
@@ -154,7 +191,8 @@ function updateSimulationPanel() {
   $('#runTarget').textContent = daysAtHome;
   $('#runProgress').style.width = `${progress * 100}%`;
   $('#runKwh').textContent = `${shownKwh.toFixed(1)} kWh`;
-  $('#runBill').textContent = currency(calculateBill(shownKwh).total);
+  const runningSplit = runComplete ? null : { peakKwh:runPeakKwh, offpeakKwh:runOffpeakKwh };
+  $('#runBill').textContent = currency(calculateBill(shownKwh, touEnabled, runningSplit).total);
   $('#runState').textContent = daysAtHome === 0 ? 'HOLIDAY' : runComplete ? 'COMPLETE' : playing ? 'RUNNING' : 'READY';
   $('#homeDaysValue').textContent = daysAtHome;
   $('#holidayNote').textContent = holidayDays ? `${holidayDays} holiday day${holidayDays === 1 ? '' : 's'}: fridge, freezer, water purifier, router and background loads continue if left on.` : 'No holiday days in this billing month.';
@@ -163,6 +201,8 @@ function resetSimulation(resetClock = true) {
   playing = false;
   simDay = 0;
   runKwh = 0;
+  runPeakKwh = 0;
+  runOffpeakKwh = 0;
   runComplete = daysAtHome === 0;
   $('#playButton').setAttribute('aria-pressed', 'false');
   $('#playButton').disabled = daysAtHome === 0;
@@ -281,6 +321,7 @@ function updateBill(announce = false) {
   if (baselineBill === null) baselineBill = b.total;
   $('#billTotal').textContent = b.total.toFixed(2);
   $('#billTotalBottom').textContent = currency(b.total);
+  $('#billPlanName').textContent = b.useTou ? 'Domestic ToU · RP4' : 'Domestic General · RP4';
   $('#kwhTotal').textContent = Math.round(b.kwh).toLocaleString();
   $('#meterFill').style.width = `${Math.min(100, b.kwh / 1200 * 100)}%`;
   const badge = $('#protectionBadge');
@@ -289,9 +330,29 @@ function updateBill(announce = false) {
   const diff = b.total - baselineBill;
   $('#billDelta').textContent = Math.abs(diff) < .01 ? 'Your starting household estimate' : `${diff < 0 ? '↓' : '↑'} ${currency(diff)} ${diff < 0 ? 'saved' : 'more'} from your starting setup`;
 
+  const touToggle = $('#touToggle');
+  touToggle.classList.toggle('active', b.useTou);
+  touToggle.setAttribute('aria-checked', String(b.useTou));
+  touToggle.querySelector('b').textContent = b.useTou ? 'On' : 'Off';
+  $('#touPeakKwh').textContent = `${b.peakKwh.toFixed(1)} kWh`;
+  $('#touOffpeakKwh').textContent = `${b.offpeakKwh.toFixed(1)} kWh`;
+  $('#touPeakRate').textContent = (b.peakRate * 100).toFixed(2);
+  $('#touOffpeakRate').textContent = (b.offpeakRate * 100).toFixed(2);
+  const alternateBill = calculateBill(b.kwh, !b.useTou);
+  const touDifference = (b.useTou ? b.total : alternateBill.total) - (b.useTou ? alternateBill.total : b.total);
+  const touCopy = Math.abs(touDifference) < .01
+    ? 'Your current schedule costs about the same on General and ToU.'
+    : touDifference < 0
+      ? `Your schedule is estimated to save ${currency(Math.abs(touDifference))} per month with ToU.`
+      : `Your schedule is estimated to cost ${currency(touDifference)} more per month with ToU.`;
+  $('#touResult').textContent = b.useTou ? `${touCopy} ToU rates are active in this estimate.` : `${touCopy} Turn on ToU to use those rates.`;
+
   const eeRate = incentiveRate(b.kwh) * 100;
   $('#billLines').innerHTML = [
-    addBillLine('Energy charge', `${(b.generationRate*100).toFixed(2)} sen × ${b.kwh.toFixed(1)} kWh`, b.energy),
+    ...(b.useTou ? [
+      addBillLine('Peak energy charge', `${(b.peakRate*100).toFixed(2)} sen × ${b.peakKwh.toFixed(1)} kWh`, b.peakKwh * b.peakRate),
+      addBillLine('Off-peak energy charge', `${(b.offpeakRate*100).toFixed(2)} sen × ${b.offpeakKwh.toFixed(1)} kWh`, b.offpeakKwh * b.offpeakRate)
+    ] : [addBillLine('Energy charge', `${(b.generalRate*100).toFixed(2)} sen × ${b.kwh.toFixed(1)} kWh`, b.energy)]),
     addBillLine('Capacity charge', `4.55 sen × ${b.kwh.toFixed(1)} kWh`, b.capacity),
     addBillLine('Network charge', `12.85 sen × ${b.kwh.toFixed(1)} kWh`, b.network),
     addBillLine('Energy Efficiency Incentive', eeRate ? `${eeRate.toFixed(2)} sen rebate on all kWh` : 'Not available above 1,000 kWh', b.incentive, true),
@@ -428,13 +489,13 @@ $('#scenarioSave').addEventListener('click', () => {
   const name = $('#scenarioName').value.trim() || `Scenario ${readScenarios().length + 1}`;
   const bill = calculateBill();
   const scenarios = readScenarios();
-  const saved = { id:`scenario-${Date.now()}`, name, appliances:structuredClone(appliances), afaRate, daysAtHome, kwh:bill.kwh, bill:bill.total };
+  const saved = { id:`scenario-${Date.now()}`, name, appliances:structuredClone(appliances), afaRate, touEnabled, daysAtHome, kwh:bill.kwh, bill:bill.total };
   scenarios.push(saved); writeScenarios(scenarios); $('#scenarioName').value = ''; refreshScenarioSelect(saved.id);
 });
 $('#scenarioSelect').addEventListener('change', () => refreshScenarioSelect($('#scenarioSelect').value));
 $('#scenarioLoad').addEventListener('click', () => {
   const saved = readScenarios().find(s => s.id === $('#scenarioSelect').value); if (!saved) return;
-  appliances = structuredClone(saved.appliances); appliances.forEach(syncUsageHours); afaRate = saved.afaRate; daysAtHome = saved.daysAtHome;
+  appliances = structuredClone(saved.appliances); appliances.forEach(syncUsageHours); afaRate = saved.afaRate; touEnabled = Boolean(saved.touEnabled); daysAtHome = saved.daysAtHome;
   $('#homeDays').value = daysAtHome; $('#afaSlider').value = afaRate; resetSimulation(); renderAppliances(); updateAfaLabel(); updateBill(true);
 });
 $('#scenarioDelete').addEventListener('click', () => {
@@ -464,8 +525,9 @@ function updateCalibration(currentBill = calculateBill()) {
 ['actualKwh','actualBill','actualDays'].forEach(id => $(`#${id}`).addEventListener('input', () => updateCalibration(calculateBill())));
 refreshScenarioSelect();
 
-$('#resetButton').addEventListener('click', () => { appliances = structuredClone(defaults); afaRate = defaultAfa; daysAtHome = 30; $('#homeDays').value = daysAtHome; $('#afaSlider').value = defaultAfa; baselineBill = null; resetSimulation(); renderAppliances(); updateAfaLabel(); updateBill(true); });
+$('#resetButton').addEventListener('click', () => { appliances = structuredClone(defaults); afaRate = defaultAfa; touEnabled = false; daysAtHome = 30; $('#homeDays').value = daysAtHome; $('#afaSlider').value = defaultAfa; baselineBill = null; resetSimulation(); renderAppliances(); updateAfaLabel(); updateBill(true); });
 $('#infoToggle').addEventListener('click', () => { const note = $('#formulaNote'); note.hidden = !note.hidden; $('#infoToggle').setAttribute('aria-expanded', String(!note.hidden)); });
+$('#touToggle').addEventListener('click', () => { touEnabled = !touEnabled; updateBill(true); updateSimulationPanel(); });
 function updateAfaLabel() { $('#afaValue').textContent = `${afaRate >= 0 ? '+' : ''}${afaRate.toFixed(2)} sen/kWh`; }
 $('#afaSlider').addEventListener('input', (e) => { afaRate = Number(e.target.value); updateAfaLabel(); updateBill(); updateSimulationPanel(); });
 $('#afaReset').addEventListener('click', () => { afaRate = defaultAfa; $('#afaSlider').value = defaultAfa; updateAfaLabel(); updateBill(); updateSimulationPanel(); });
@@ -596,6 +658,11 @@ function updateLiveLoad() {
 function liveLoadKw() {
   return appliances.filter(isActiveAtTime).reduce((sum,a) => sum + wattsFor(a) * a.qty * operatingFactor(a), 0) / 1000;
 }
+function isTouPeakAt(minute = simMinute, day = simDay || 1) {
+  const weekday = ((Math.max(1, day) - 1) % 7) < 5;
+  const hour = ((minute % 1440) + 1440) % 1440 / 60;
+  return weekday && hour >= 14 && hour < 22;
+}
 function updateSceneState() {
   applianceMeshes.forEach((mesh, id) => {
     const related = appliances.filter(a => (a.templateId || a.id) === id);
@@ -643,7 +710,10 @@ function animate(now) {
   requestAnimationFrame(animate);
   if(playing){
     const simulatedMinutes = (now-lastFrame)*.02*simSpeed;
-    runKwh += liveLoadKw() * simulatedMinutes / 60;
+    const intervalKwh = liveLoadKw() * simulatedMinutes / 60;
+    runKwh += intervalKwh;
+    if (isTouPeakAt()) runPeakKwh += intervalKwh;
+    else runOffpeakKwh += intervalKwh;
     const nextMinute = simMinute + simulatedMinutes;
     const crossedDays = Math.floor(nextMinute / 1440);
     setTime(nextMinute);
@@ -683,14 +753,15 @@ function registerWebMcp() {
   const context=document.modelContext; if(!context?.registerTool) return;
   const tool={
     name:'configure_household_energy', title:'Configure household energy',
-    description:'Set appliance usage, product size and energy-star rating in the visible RumahWatt simulation and return the updated monthly kWh and Malaysian bill estimate.',
-    inputSchema:{type:'object',properties:{appliances:{type:'array',items:{type:'object',properties:{id:{type:'string'},hoursPerDay:{type:'number',minimum:0,maximum:24},quantity:{type:'integer',minimum:1,maximum:24},enabled:{type:'boolean'},variant:{type:'string'},compressorType:{type:'string'},stars:{type:'integer',minimum:1,maximum:5}},required:['id'],additionalProperties:false}},afaSenPerKwh:{type:'number',minimum:-10,maximum:10}},additionalProperties:false},
+    description:'Set appliance usage, product size, energy-star rating and tariff plan in the visible myWATT simulation and return the updated monthly kWh and Malaysian bill estimate.',
+    inputSchema:{type:'object',properties:{appliances:{type:'array',items:{type:'object',properties:{id:{type:'string'},hoursPerDay:{type:'number',minimum:0,maximum:24},quantity:{type:'integer',minimum:1,maximum:24},enabled:{type:'boolean'},variant:{type:'string'},compressorType:{type:'string'},stars:{type:'integer',minimum:1,maximum:5}},required:['id'],additionalProperties:false}},afaSenPerKwh:{type:'number',minimum:-10,maximum:10},touEnabled:{type:'boolean'}},additionalProperties:false},
     annotations:{readOnlyHint:false,untrustedContentHint:false},
     execute(input){
       if(!input || typeof input!=='object') throw new Error('Input must be an object.');
       if(input.afaSenPerKwh!==undefined){ if(!Number.isFinite(input.afaSenPerKwh)||input.afaSenPerKwh < -10||input.afaSenPerKwh > 10) throw new Error('AFA must be between -10 and 10 sen/kWh.'); afaRate=input.afaSenPerKwh; $('#afaSlider').value=afaRate; updateAfaLabel(); }
+      if(input.touEnabled!==undefined) touEnabled=input.touEnabled;
       if(input.appliances){ for(const update of input.appliances){ const a=appliances.find(x=>x.id===update.id); if(!a) throw new Error(`Unknown appliance id: ${update.id}`); if(a.alwaysOn && update.enabled===false) throw new Error(`${a.name} represents the unavoidable connected-home baseline and cannot be switched off.`); if(update.hoursPerDay!==undefined) a.hours=update.hoursPerDay; if(update.quantity!==undefined) a.qty=update.quantity; if(update.enabled!==undefined) a.on=update.enabled; if(update.stars!==undefined){ if(!a.stars) throw new Error(`${a.name} does not use the star-rating control.`); a.stars=update.stars; } if(update.variant!==undefined && !selectVariant(a, update.variant)) throw new Error(`Unknown ${a.name} variant: ${update.variant}`); if(update.compressorType!==undefined && !selectSecondaryVariant(a, update.compressorType)) throw new Error(`Unknown ${a.name} compressor type: ${update.compressorType}`); } }
-      renderAppliances(); updateBill(true); const bill=calculateBill(); return {monthlyKwh:Number(bill.kwh.toFixed(1)),estimatedBillRm:Number(bill.total.toFixed(2)),protected:bill.protectedUser};
+      renderAppliances(); updateBill(true); const bill=calculateBill(); return {monthlyKwh:Number(bill.kwh.toFixed(1)),estimatedBillRm:Number(bill.total.toFixed(2)),tariff:bill.useTou?'Domestic ToU':'Domestic General',peakKwh:Number(bill.peakKwh.toFixed(1)),offpeakKwh:Number(bill.offpeakKwh.toFixed(1)),protected:bill.protectedUser};
     }
   };
   try { void Promise.resolve(context.registerTool(tool)).catch(()=>{}); } catch {}

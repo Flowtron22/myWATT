@@ -1,12 +1,21 @@
-# RumahWatt updates
+# myWATT??! updates
 
 Last updated: 22 September 2026
 
-Live simulator: https://rumahwatt-simulator.pedr0kantor.chatgpt.site/
+Repository: https://github.com/Flowtron22/myWATT
 
 ## Current release
 
-RumahWatt is an educational household electricity planning sandbox for Peninsular Malaysia. It estimates monthly energy use and the current charge using the RP4 Domestic General tariff model, September 2026 AFA input, applicable protection rules, and a RM5 minimum monthly charge.
+myWATT??! is an educational household electricity planning sandbox by Ureka Games for Peninsular Malaysia. It estimates monthly energy use and the current charge using the RP4 domestic tariff model, September 2026 AFA input, applicable protection rules, and a RM5 minimum monthly charge.
+
+## Domestic Time of Use
+
+- Switch between Domestic General and the optional TNB Domestic ToU plan.
+- Split scheduled appliance energy between weekday peak hours and off-peak hours.
+- Apply the official RP4 peak and off-peak energy rates for homes below or above 1,500 kWh per month.
+- Treat 2 PM–10 PM on weekdays as peak; weekdays before 2 PM or after 10 PM and all weekends are off-peak.
+- Compare the estimated ToU bill with the General tariff before choosing a plan.
+- Explain the representative 22-weekday and 8-weekend assumption and the smart-meter eligibility requirement.
 
 The estimate is for planning and comparison. It is not an official TNB bill.
 
