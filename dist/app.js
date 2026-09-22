@@ -5,17 +5,24 @@ const daysPerMonth = 30;
 const defaultAfa = 3.67;
 
 const defaults = [
+  { id: 'homebase', name: 'House idle load', icon: '⌂', watts: 28, hours: 24, qty: 1, duty: 1, on: true, alwaysOn: true, start: 0, room: 'Whole house', note: 'Small standby loads left connected' },
   { id: 'aircon', name: 'Air conditioner', icon: '❄', watts: 1050, hours: 8, qty: 1, duty: 0.72, on: true, start: 22, room: 'Bedroom', variant: '1.5 HP', stars: 5, variants: [{ label:'1.0 HP', watts:720 },{ label:'1.5 HP', watts:1050 },{ label:'2.0 HP', watts:1450 },{ label:'2.5 HP', watts:1850 },{ label:'3.0 HP', watts:2300 }] },
-  { id: 'fridge', name: 'Refrigerator', icon: '▥', watts: 130, hours: 24, qty: 1, duty: 0.38, on: true, start: 0, end: 24, room: 'Kitchen' },
+  { id: 'fridge', name: 'Refrigerator', icon: '▥', watts: 150, hours: 24, qty: 1, duty: 0.38, on: true, start: 0, room: 'Kitchen', variant: '2-door · 300L', variantLabel: 'Fridge type', stars: 4, variants: [{ label:'Mini bar · 90L', watts:70 },{ label:'1-door · 180L', watts:105 },{ label:'2-door · 300L', watts:150 },{ label:'4-door · 500L', watts:240 },{ label:'Side-by-side · 600L', watts:270 }] },
+  { id: 'freezer', name: 'Freezer', icon: '▤', watts: 160, hours: 24, qty: 1, duty: 0.42, on: false, start: 0, room: 'Kitchen', variant: 'Chest · 300L', variantLabel: 'Freezer type', stars: 4, variants: [{ label:'Chest · 150L', watts:110 },{ label:'Chest · 300L', watts:160 },{ label:'Upright · 250L', watts:185 },{ label:'Upright · 400L', watts:240 }] },
   { id: 'heater', name: 'Water heater', icon: '♨', watts: 3600, hours: 0.6, qty: 1, duty: 1, on: true, start: 7, end: 8, room: 'Bathroom' },
   { id: 'washer', name: 'Washing machine', icon: '◉', watts: 500, hours: 0.55, qty: 1, duty: 1, on: true, start: 11, end: 12, room: 'Yard' },
+  { id: 'dryer', name: 'Clothes dryer', icon: '◍', watts: 2500, hours: 0.45, qty: 1, duty: 1, on: false, start: 12, room: 'Yard', variant: 'Vented · 8kg', variantLabel: 'Dryer type', variants: [{ label:'Heat pump · 8kg', watts:900 },{ label:'Condenser · 8kg', watts:2100 },{ label:'Vented · 8kg', watts:2500 }] },
   { id: 'tv', name: 'Television', icon: '▰', watts: 110, hours: 4.5, qty: 1, duty: 1, on: true, start: 19, room: 'Living', variant: '55 inch', stars: 5, variants: [{ label:'32 inch', watts:55 },{ label:'43 inch', watts:80 },{ label:'55 inch', watts:110 },{ label:'65 inch', watts:155 },{ label:'75 inch', watts:210 }] },
   { id: 'fan', name: 'Ceiling fan', icon: '✣', watts: 55, hours: 8, qty: 2, duty: 1, on: true, start: 14, end: 22, room: 'Living' },
   { id: 'lights', name: 'LED lights', icon: '●', watts: 9, hours: 6, qty: 9, duty: 1, on: true, start: 18, end: 24, room: 'Whole house' },
   { id: 'rice', name: 'Rice cooker', icon: '◒', watts: 700, hours: 1.1, qty: 1, duty: 0.62, on: true, start: 17.5, end: 19, room: 'Kitchen' },
+  { id: 'microwave', name: 'Microwave', icon: '▣', watts: 1200, hours: 0.15, qty: 1, duty: 1, on: false, start: 12.5, room: 'Kitchen' },
+  { id: 'oven', name: 'Electric oven', icon: '▦', watts: 2400, hours: 0.5, qty: 1, duty: 0.75, on: false, start: 18, room: 'Kitchen' },
+  { id: 'hood', name: 'Cooker hood', icon: '≋', watts: 180, hours: 1, qty: 1, duty: 1, on: false, start: 18, room: 'Kitchen', note: 'Kitchen smoke and exhaust fan' },
   { id: 'router', name: 'Wi‑Fi router', icon: '⌁', watts: 12, hours: 24, qty: 1, duty: 1, on: true, start: 0, end: 24, room: 'Study' },
   { id: 'pc', name: 'Desktop PC', icon: '▣', watts: 350, hours: 4, qty: 1, duty: 0.72, on: true, start: 9, end: 18, room: 'Study' },
   { id: 'kettle', name: 'Kettle', icon: '◓', watts: 1800, hours: 0.2, qty: 1, duty: 1, on: true, start: 7, end: 7.3, room: 'Kitchen' },
+  { id: 'ev', name: 'Home EV charging', icon: '⚡', watts: 7400, hours: 1.5, qty: 1, duty: 1, on: false, start: 0, room: 'Car porch', variant: 'Wallbox · 7.4 kW', variantLabel: 'Charger type', variants: [{ label:'Portable plug · 2.3 kW', watts:2300 },{ label:'Wallbox · 3.7 kW', watts:3700 },{ label:'Wallbox · 7.4 kW', watts:7400 },{ label:'3-phase · 11 kW', watts:11000 }], note: 'Adds to your home bill when charged at home' },
   { id: 'standby', name: 'Standby load', icon: '◌', watts: 32, hours: 24, qty: 1, duty: 1, on: true, start: 0, end: 24, room: 'Whole house' }
 ];
 
@@ -35,6 +42,10 @@ const starMultipliers = { 1: 1.18, 2: 1.09, 3: 1, 4: .91, 5: .82 };
 function wattsFor(a) {
   const base = a.variants ? (a.variants.find(v => v.label === a.variant)?.watts || a.watts) : a.watts;
   return Math.round(base * (a.stars ? starMultipliers[a.stars] : 1));
+}
+function formatHours(hours) {
+  if (hours < 1) return hours.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
+  return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
 }
 
 function incentiveRate(kwh) {
@@ -57,8 +68,9 @@ function calculateBill() {
   const taxableShare = protectedUser ? 0 : Math.max(0, kwh - protectionThreshold) / kwh;
   const sst = protectedUser ? 0 : ((kwhChargesAfterDiscount + afa) * taxableShare + retail) * .08;
   const subtotal = energy + capacity + network + afa + retail - incentive + kwtbb + sst;
-  const total = Math.max(kwh > 0 ? 5 : 0, subtotal);
-  return { kwh, generationRate, energy, capacity, network, incentive, afa, retail, kwtbb, sst, total, protectedUser };
+  const minimumAdjustment = Math.max(0, 5 - subtotal);
+  const total = Math.max(5, subtotal);
+  return { kwh, generationRate, energy, capacity, network, incentive, afa, retail, kwtbb, sst, subtotal, minimumAdjustment, total, protectedUser };
 }
 
 function applianceKwh(a) { return a.on ? (wattsFor(a) / 1000) * a.hours * a.qty * a.duty * daysPerMonth : 0; }
@@ -66,40 +78,44 @@ function applianceKwh(a) { return a.on ? (wattsFor(a) / 1000) * a.hours * a.qty 
 function renderAppliances() {
   grid.innerHTML = appliances.map(a => {
     const estimatedWatts = wattsFor(a);
-    const shoppingOptions = a.variants ? `
-      <div class="product-options">
-        <div class="variant-control">
-          <label for="variant-${a.id}">${a.id === 'aircon' ? 'Cooling size' : 'Screen size'}</label>
-          <select id="variant-${a.id}" data-action="variant" data-id="${a.id}" aria-label="${a.name} size">
-            ${a.variants.map(v => `<option value="${v.label}" ${v.label === a.variant ? 'selected' : ''}>${v.label}</option>`).join('')}
-          </select>
-        </div>
+    const monthlyKwh = (estimatedWatts / 1000) * a.hours * a.qty * a.duty * daysPerMonth;
+    const ratingControl = a.stars ? `
         <div class="rating-control">
           <span>Energy rating</span>
           <div class="stars" role="group" aria-label="${a.name} energy star rating">
             ${[1,2,3,4,5].map(star => `<button class="star-button ${star <= a.stars ? 'filled' : ''}" type="button" data-action="stars" data-id="${a.id}" data-stars="${star}" aria-label="Set ${star} star rating" aria-pressed="${star === a.stars}">★</button>`).join('')}
           </div>
+        </div>` : '';
+    const shoppingOptions = a.variants ? `
+      <div class="product-options ${a.stars ? '' : 'single-option'}">
+        <div class="variant-control">
+          <label for="variant-${a.id}">${a.variantLabel || (a.id === 'aircon' ? 'Cooling size' : 'Screen size')}</label>
+          <select id="variant-${a.id}" data-action="variant" data-id="${a.id}" aria-label="${a.name} size">
+            ${a.variants.map(v => `<option value="${v.label}" ${v.label === a.variant ? 'selected' : ''}>${v.label}</option>`).join('')}
+          </select>
         </div>
-        <p class="watt-explain">Estimated average input: <b>${estimatedWatts.toLocaleString()} W</b>. Star impact is an educational estimate; check the product energy label for its tested kWh.</p>
+        ${ratingControl}
+        <p class="watt-explain">Estimated input: <b>${estimatedWatts.toLocaleString()} W</b>${a.stars ? '. Star impact is an educational estimate; check the product energy label for its tested kWh.' : '.'}</p>
       </div>` : '';
     return `
-    <article class="appliance-card ${a.on ? 'on' : ''}" data-card="${a.id}">
+    <article class="appliance-card ${a.on ? 'on' : ''} ${a.alwaysOn ? 'always-on' : ''}" data-card="${a.id}">
       <div class="appliance-top">
         <span class="appliance-icon" aria-hidden="true">${a.icon}</span>
-        <div class="appliance-name"><b>${a.name}</b><small>${a.variant ? `${a.variant} · ` : ''}${estimatedWatts.toLocaleString()} W · ${a.room}</small></div>
-        <button class="switch" type="button" data-action="toggle" data-id="${a.id}" aria-label="${a.on ? 'Switch off' : 'Switch on'} ${a.name}" aria-pressed="${a.on}"></button>
+        <div class="appliance-name"><b>${a.name}</b><small>${a.variant ? `${a.variant} · ` : ''}${estimatedWatts.toLocaleString()} W · ${a.on ? '' : 'OFF · '}≈${monthlyKwh.toFixed(monthlyKwh < 10 ? 1 : 0)} kWh/mo</small></div>
+        ${a.alwaysOn ? '<span class="always-badge">BASE</span>' : `<button class="switch" type="button" data-action="toggle" data-id="${a.id}" aria-label="${a.on ? 'Switch off' : 'Switch on'} ${a.name}" aria-pressed="${a.on}"></button>`}
       </div>
       <div class="appliance-controls">
         <div class="hours-control">
-          <label for="hours-${a.id}"><span>Hours / day</span><b>${a.hours.toFixed(a.hours < 1 ? 1 : 0)}h</b></label>
-          <input id="hours-${a.id}" data-action="hours" data-id="${a.id}" type="range" min="0" max="24" step="0.1" value="${a.hours}" ${a.on ? '' : 'disabled'}>
+          <label for="hours-${a.id}"><span>Hours / day</span><b>${formatHours(a.hours)}h</b></label>
+          <input id="hours-${a.id}" data-action="hours" data-id="${a.id}" type="range" min="0" max="24" step="0.05" value="${a.hours}" ${a.on && !a.alwaysOn ? '' : 'disabled'}>
         </div>
-        <div class="qty-control" aria-label="Quantity">
+        ${a.alwaysOn ? '' : `<div class="qty-control" aria-label="Quantity">
           <button type="button" data-action="qty-down" data-id="${a.id}" aria-label="Reduce ${a.name} quantity">−</button>
           <span>${a.qty}</span>
           <button type="button" data-action="qty-up" data-id="${a.id}" aria-label="Increase ${a.name} quantity">+</button>
-        </div>
+        </div>`}
       </div>
+      ${a.note ? `<p class="appliance-note">${a.note}</p>` : ''}
       ${shoppingOptions}
     </article>`;
   }).join('');
@@ -131,7 +147,8 @@ function updateBill(announce = false) {
     addBillLine('Automatic Fuel Adjustment', b.protectedUser ? `Exempt under current ${protectionThreshold} kWh protection` : `${afaRate >= 0 ? '+' : ''}${afaRate.toFixed(2)} sen × ${b.kwh.toFixed(1)} kWh`, Math.abs(b.afa), b.afa < 0),
     addBillLine('Retail charge', b.protectedUser ? 'Exempt under current protection' : 'Fixed monthly charge', b.retail),
     addBillLine('Renewable Energy Fund', b.kwh <= 300 ? 'Exempt at 300 kWh and below' : '1.6% of eligible usage charges', b.kwtbb),
-    addBillLine('Service tax', b.protectedUser ? 'Exempt under current protection' : '8% on estimated taxable portion', b.sst)
+    addBillLine('Service tax', b.protectedUser ? 'Exempt under current protection' : '8% on estimated taxable portion', b.sst),
+    ...(b.minimumAdjustment > 0 ? [addBillLine('Minimum monthly charge', 'Domestic tariff minimum: RM5.00', b.minimumAdjustment)] : [])
   ].join('');
 
   const score = Math.max(8, Math.round(100 - Math.max(0, b.kwh - 250) * .085 - Math.max(0, b.total - 120) * .045));
@@ -140,12 +157,15 @@ function updateBill(announce = false) {
   $('#scoreTitle').textContent = score >= 80 ? 'Efficient household' : score >= 60 ? 'Good, with room to trim' : score >= 40 ? 'High-use household' : 'Energy intensive';
   $('#scoreCopy').textContent = b.protectedUser ? `${Math.max(0, protectionThreshold - b.kwh).toFixed(0)} kWh of headroom before AFA, retail and SST protection ends.` : `${(b.kwh - protectionThreshold).toFixed(0)} kWh above the current protection line.`;
 
-  const ranked = appliances.filter(a => a.on).sort((a,c) => applianceKwh(c) - applianceKwh(a));
+  const ranked = appliances.filter(a => a.on && !a.alwaysOn).sort((a,c) => applianceKwh(c) - applianceKwh(a));
   const top = ranked[0];
   if (top) {
     const oneHour = (wattsFor(top) / 1000) * top.qty * top.duty * daysPerMonth;
     $('#coachTitle').textContent = `Trim ${top.name.toLowerCase()} by one hour`;
     $('#coachCopy').textContent = `Your biggest load uses about ${applianceKwh(top).toFixed(0)} kWh/month. One hour less per day removes roughly ${oneHour.toFixed(0)} kWh before tariff effects.`;
+  } else {
+    $('#coachTitle').textContent = 'Only the connected-home baseline remains';
+    $('#coachCopy').textContent = 'The estimate stays at the RM5 domestic minimum charge even when every optional appliance is switched off.';
   }
   updateSceneState();
   if (announce) $('#billTotal').setAttribute('aria-label', `Estimated bill ${currency(b.total)}`);
@@ -247,13 +267,20 @@ box(3.2,.55,2.2,0xe8dfca,3,.34,2.55); box(3.2,.16,.22,0x7e9b91,3,1.05,3.58); // 
 const ac = box(1.55,.48,.42,0xe9eee8,4.5,1.15,.5,'aircon',0x78d9ff); applianceMeshes.set('aircon', ac);
 box(4.8,.68,.72,0x536e61,-3,.43,-3.2); // kitchen bench
 const fridge = box(1.15,2.2,1.0,0xdce5df,-5.0,1.17,-2.1,'fridge',0x8ae6bd); applianceMeshes.set('fridge', fridge);
+const freezer = box(1.25,.8,.9,0xcddbd5,-4.0,.5,-3.15,'freezer',0x78d9ff); applianceMeshes.set('freezer', freezer);
 const rice = box(.65,.6,.65,0xf0eee5,-2.8,.92,-3.15,'rice',0xf4c84a); applianceMeshes.set('rice', rice);
 const kettle = box(.42,.62,.42,0x25362f,-1.75,.92,-3.15,'kettle',0xff7a3d); applianceMeshes.set('kettle', kettle);
+const microwave = box(.8,.48,.52,0x2e4039,-.85,.9,-3.15,'microwave',0xff7a3d); applianceMeshes.set('microwave', microwave);
+const oven = box(.9,1.0,.7,0x27362f,-1.3,.54,-2.0,'oven',0xff7a3d); applianceMeshes.set('oven', oven);
+const hood = box(1.4,.25,.62,0xb9c9c1,-2.3,1.75,-3.1,'hood',0xf4c84a); applianceMeshes.set('hood', hood);
 box(2.3,.7,.65,0x3c5b51,3,.45,-3.25); // desk
 const pc = box(.85,1.15,.65,0x151e1b,4.8,.62,-3.0,'pc',0x8ae6bd); applianceMeshes.set('pc', pc);
 const washer = box(1.1,1.15,1.0,0xe4ebe5,1.15,.62,-2.85,'washer',0x78d9ff); applianceMeshes.set('washer', washer);
+const dryer = box(1.1,1.15,1.0,0xcfd9d2,2.45,.62,-2.85,'dryer',0xff7a3d); applianceMeshes.set('dryer', dryer);
 const heater = box(.56,1.1,.5,0xe7e3d6,5.25,.75,-1.3,'heater',0xff7a3d); applianceMeshes.set('heater', heater);
 const router = box(.58,.16,.42,0x182520,2.1,.86,-3.25,'router',0x8ae6bd); applianceMeshes.set('router', router);
+const ev = box(2.7,.58,1.35,0x315f55,3.4,.05,5.05,'ev',0x8ae6bd); applianceMeshes.set('ev', ev);
+box(.56,.44,.38,0xf4c84a,5.1,.22,4.7); // wallbox
 // bulbs/fans as interactive tokens
 [[-3,2.1,2.2],[3,2.1,2.2],[-3,2.1,-2.2],[3,2.1,-2.2]].forEach((p,i)=>{ const bulb = new THREE.PointLight(0xffcc55,0,4); bulb.position.set(...p); group.add(bulb); roomLights.push(bulb); const orb = new THREE.Mesh(new THREE.SphereGeometry(.13,12,12), new THREE.MeshBasicMaterial({color:0xf4c84a})); orb.position.set(...p); orb.userData.applianceId='lights'; group.add(orb); if(i===0) applianceMeshes.set('lights',orb); });
 const fan = new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.08,16), new THREE.MeshStandardMaterial({color:0x304f45})); fan.position.set(-2.7,2.05,1.9); fan.userData.applianceId='fan'; group.add(fan); applianceMeshes.set('fan',fan);
@@ -364,7 +391,7 @@ function registerWebMcp() {
     execute(input){
       if(!input || typeof input!=='object') throw new Error('Input must be an object.');
       if(input.afaSenPerKwh!==undefined){ if(!Number.isFinite(input.afaSenPerKwh)||input.afaSenPerKwh < -10||input.afaSenPerKwh > 10) throw new Error('AFA must be between -10 and 10 sen/kWh.'); afaRate=input.afaSenPerKwh; $('#afaSlider').value=afaRate; updateAfaLabel(); }
-      if(input.appliances){ for(const update of input.appliances){ const a=appliances.find(x=>x.id===update.id); if(!a) throw new Error(`Unknown appliance id: ${update.id}`); if(update.hoursPerDay!==undefined) a.hours=update.hoursPerDay; if(update.quantity!==undefined) a.qty=update.quantity; if(update.enabled!==undefined) a.on=update.enabled; if(update.stars!==undefined) a.stars=update.stars; if(update.variant!==undefined){ if(!a.variants?.some(v=>v.label===update.variant)) throw new Error(`Unknown ${a.name} variant: ${update.variant}`); a.variant=update.variant; } } }
+      if(input.appliances){ for(const update of input.appliances){ const a=appliances.find(x=>x.id===update.id); if(!a) throw new Error(`Unknown appliance id: ${update.id}`); if(a.alwaysOn && update.enabled===false) throw new Error(`${a.name} represents the unavoidable connected-home baseline and cannot be switched off.`); if(update.hoursPerDay!==undefined) a.hours=update.hoursPerDay; if(update.quantity!==undefined) a.qty=update.quantity; if(update.enabled!==undefined) a.on=update.enabled; if(update.stars!==undefined){ if(!a.stars) throw new Error(`${a.name} does not use the star-rating control.`); a.stars=update.stars; } if(update.variant!==undefined){ if(!a.variants?.some(v=>v.label===update.variant)) throw new Error(`Unknown ${a.name} variant: ${update.variant}`); a.variant=update.variant; } } }
       renderAppliances(); updateBill(true); const bill=calculateBill(); return {monthlyKwh:Number(bill.kwh.toFixed(1)),estimatedBillRm:Number(bill.total.toFixed(2)),protected:bill.protectedUser};
     }
   };
