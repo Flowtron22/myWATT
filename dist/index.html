@@ -73,6 +73,13 @@
               <div><span>Energy so far</span><b id="runKwh">0.0 kWh</b></div>
               <div><span>Running bill</span><b id="runBill">RM 0.00</b></div>
             </div>
+            <div class="energy-leaderboard">
+              <div class="leaderboard-heading">
+                <b>Energy leaders</b>
+                <span id="rankingCaption">Ready to measure</span>
+              </div>
+              <ol id="energyRanking" aria-label="Appliances ranked by accumulated energy use"></ol>
+            </div>
             <label class="occupancy-control" for="homeDays"><span>Days at home</span><b><em id="homeDaysValue">30</em> days</b></label>
             <input id="homeDays" type="range" min="0" max="30" step="1" value="30">
             <p id="holidayNote">No holiday days in this billing month.</p>

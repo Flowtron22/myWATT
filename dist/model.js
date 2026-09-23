@@ -159,10 +159,17 @@ export function integrateSimulationInterval(appliances, { startDay, startMinute,
   let totalKwh = 0;
   let peakKwh = 0;
   let offpeakKwh = 0;
+  const applianceKwh = {};
   while (remaining > 1e-9) {
     const step = Math.min(1, remaining, 1440 - minute);
     const sampleMinute = minute + step / 2;
-    const energy = liveLoadKwAt(appliances, sampleMinute, day) * step / 60;
+    let energy = 0;
+    for (const appliance of appliances) {
+      if (!isActiveAtTime(appliance, sampleMinute, day)) continue;
+      const applianceEnergy = wattsFor(appliance) * appliance.qty * operatingFactor(appliance) / 1000 * step / 60;
+      energy += applianceEnergy;
+      applianceKwh[appliance.id] = (applianceKwh[appliance.id] || 0) + applianceEnergy;
+    }
     totalKwh += energy;
     if (isTouPeakAt(sampleMinute, day)) peakKwh += energy;
     else offpeakKwh += energy;
@@ -170,7 +177,7 @@ export function integrateSimulationInterval(appliances, { startDay, startMinute,
     remaining -= step;
     if (minute >= 1440 - 1e-9) { minute = 0; day += 1; }
   }
-  return { totalKwh, peakKwh, offpeakKwh, endDay:day, endMinute:minute };
+  return { totalKwh, peakKwh, offpeakKwh, applianceKwh, endDay:day, endMinute:minute };
 }
 
 export function isProtectionConfigCurrent(date = new Date(), config = tariffConfig) {

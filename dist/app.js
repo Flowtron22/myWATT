@@ -93,8 +93,10 @@ let simDay = 0;
 let runKwh = 0;
 let runPeakKwh = 0;
 let runOffpeakKwh = 0;
+let runApplianceKwh = {};
 let runComplete = false;
 let lastFrame = performance.now();
+let lastRankingRender = 0;
 
 const $ = (selector) => document.querySelector(selector);
 const grid = $('#applianceGrid');
@@ -138,6 +140,34 @@ function holidayBackgroundKwh() {
   const holidayDays = daysPerMonth - daysAtHome;
   return appliances.reduce((sum, a) => sum + (a.on && a.awayOn ? applianceEnergyForDays(a, holidayDays) : 0), 0);
 }
+function renderEnergyRanking(force = false) {
+  const now = performance.now();
+  if (!force && now - lastRankingRender < 120) return;
+  lastRankingRender = now;
+  const entries = appliances
+    .filter(appliance => appliance.included !== false && appliance.on)
+    .map((appliance, index) => ({
+      appliance,
+      index,
+      kwh: runComplete ? applianceEnergyForDays(appliance) : (runApplianceKwh[appliance.id] || 0)
+    }))
+    .sort((left, right) => right.kwh - left.kwh || left.index - right.index);
+  const leaderKwh = entries[0]?.kwh || 0;
+  const rankedKwh = entries.reduce((sum, entry) => sum + entry.kwh, 0);
+  const runningBill = calculateBill(runComplete ? monthlyKwh() : runKwh, touEnabled, runComplete ? null : { peakKwh:runPeakKwh, offpeakKwh:runOffpeakKwh });
+  $('#rankingCaption').textContent = runComplete ? 'Final breakdown' : playing ? 'Updating live' : runKwh > 0 ? 'Paused' : 'Ready to measure';
+  $('#energyRanking').innerHTML = entries.length ? entries.map(({ appliance, kwh }, rank) => {
+    const share = rankedKwh ? kwh / rankedKwh : 0;
+    const billShare = runningBill.total * share;
+    const active = !runComplete && isActiveAtTime(appliance);
+    return `<li class="${active ? 'currently-running' : ''}">
+      <span class="rank-number">${rank + 1}</span>
+      <span class="rank-icon" aria-hidden="true">${appliance.icon}</span>
+      <span class="rank-appliance"><b>${escapeHtml(appliance.name)}</b><i style="--usage:${leaderKwh ? Math.max(2, kwh / leaderKwh * 100) : 0}%"></i></span>
+      <span class="rank-value"><b>${kwh.toFixed(kwh < 10 ? 2 : 1)} kWh</b><small>${currency(billShare)} share</small></span>
+    </li>`;
+  }).join('') : '<li class="ranking-empty">Switch on an appliance to measure it.</li>';
+}
 function updateSimulationPanel() {
   const holidayDays = daysPerMonth - daysAtHome;
   const shownKwh = runComplete ? monthlyKwh() : runKwh;
@@ -151,6 +181,7 @@ function updateSimulationPanel() {
   $('#runState').textContent = daysAtHome === 0 ? 'HOLIDAY' : runComplete ? 'COMPLETE' : playing ? 'RUNNING' : 'READY';
   $('#homeDaysValue').textContent = daysAtHome;
   $('#holidayNote').textContent = holidayDays ? `${holidayDays} holiday day${holidayDays === 1 ? '' : 's'}: fridge, freezer, water purifier, router and background loads continue if left on.` : 'No holiday days in this billing month.';
+  renderEnergyRanking(runComplete || !playing);
 }
 function resetSimulation(resetClock = true) {
   playing = false;
@@ -158,6 +189,7 @@ function resetSimulation(resetClock = true) {
   runKwh = 0;
   runPeakKwh = 0;
   runOffpeakKwh = 0;
+  runApplianceKwh = {};
   runComplete = daysAtHome === 0;
   $('#playButton').setAttribute('aria-pressed', 'false');
   $('#playButton').disabled = daysAtHome === 0;
@@ -740,6 +772,7 @@ function animate(now) {
     runKwh += interval.totalKwh;
     runPeakKwh += interval.peakKwh;
     runOffpeakKwh += interval.offpeakKwh;
+    Object.entries(interval.applianceKwh).forEach(([id, kwh]) => { runApplianceKwh[id] = (runApplianceKwh[id] || 0) + kwh; });
     simDay = interval.endDay;
     setTime(interval.endMinute);
     if (remainingMinutes <= requestedMinutes + 1e-9) {

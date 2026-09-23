@@ -48,6 +48,17 @@ test('simulation integration splits weekday peak and weekend energy', () => {
   assert.ok(Math.abs(weekday.peakKwh - 1) < 1e-9);
   assert.ok(Math.abs(weekend.offpeakKwh - 1) < 1e-9);
 });
+test('simulation integration reports energy for each active appliance', () => {
+  const interval = integrateSimulationInterval([
+    appliance({ id:'large', watts:1000, hours:24, start:0 }),
+    appliance({ id:'small', watts:250, hours:24, start:0 }),
+    appliance({ id:'off', watts:5000, hours:24, start:0, on:false })
+  ], { startDay:1, startMinute:0, durationMinutes:60 });
+  assert.ok(Math.abs(interval.applianceKwh.large - 1) < 1e-9);
+  assert.ok(Math.abs(interval.applianceKwh.small - .25) < 1e-9);
+  assert.equal(interval.applianceKwh.off, undefined);
+  assert.ok(Math.abs(interval.totalKwh - 1.25) < 1e-9);
+});
 test('overnight schedules remain active across midnight after the final scheduled day', () => {
   const overnight = appliance({ start:22, hours:4, daysPerWeek:1 });
   assert.equal(isActiveAtTime(overnight, 23*60, 1), true);

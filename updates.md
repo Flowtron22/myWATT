@@ -1,8 +1,15 @@
 # myWATT??? updates
 
-Last updated: 23 September 2026
+Last updated: 24 September 2026
 
 Repository: https://github.com/Flowtron22/myWATT
+
+## Live appliance energy ranking
+
+- Turn the billing run into a live appliance leaderboard that accumulates kWh for every included, switched-on appliance.
+- Keep the highest energy consumer at the top with proportional usage bars and an estimated share of the running bill.
+- Show the final appliance breakdown when the selected simulation period completes.
+- Prioritize the simulation dashboard on small phones, using the house scene as a subtle background instead of the main content.
 
 ## Broader household appliance catalogue
 
