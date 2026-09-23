@@ -31,14 +31,22 @@ const defaults = [
   { id: 'dryer', name: 'Clothes dryer', icon: '◍', watts: 2500, hours: 0.45, qty: 1, duty: 1, on: false, start: 12, room: 'Yard', variant: 'Vented · 8kg', variantLabel: 'Dryer type', variants: [{ label:'Heat pump · 8kg', watts:900 },{ label:'Condenser · 8kg', watts:2100 },{ label:'Vented · 8kg', watts:2500 }] },
   { id: 'tv', name: 'Television', icon: '▰', watts: 110, hours: 4.5, qty: 1, duty: 1, on: true, start: 19, room: 'Living', variant: '55 inch', stars: 5, variants: [{ label:'32 inch', watts:55 },{ label:'43 inch', watts:80 },{ label:'55 inch', watts:110 },{ label:'65 inch', watts:155 },{ label:'75 inch', watts:210 }] },
   { id: 'fan', name: 'Ceiling fan', icon: '✣', watts: 55, hours: 8, qty: 2, duty: 1, on: true, start: 14, end: 22, room: 'Living' },
+  { id: 'standingfan', name: 'Standing fan', icon: '✤', watts: 58, hours: 8, qty: 1, duty: 1, on: false, start: 14, end: 22, room: 'Living', variant: '16-inch conventional', variantLabel: 'Fan type', variants: [{ label:'12-inch conventional', watts:39 },{ label:'16-inch conventional', watts:58 },{ label:'Energy-saving DC motor', watts:28 },{ label:'Large / industrial', watts:100 }], note: 'Fan speed changes the actual draw. These are typical inputs; use the wattage printed on your fan when available.' },
+  { id: 'airpurifier', name: 'Air purifier', icon: '◎', watts: 11, hours: 24, qty: 1, duty: 1, on: false, start: 0, room: 'Living', variant: 'Auto / medium', variantLabel: 'Usual mode', variants: [{ label:'Sleep / low', watts:7 },{ label:'Auto / medium', watts:11 },{ label:'High', watts:49 },{ label:'Large room / high', watts:66 }], note: 'Auto mode changes fan speed with air quality, so the medium setting is a practical planning estimate.' },
+  { id: 'massagechair', name: 'Massage chair', icon: '♨', watts: 180, hours: 0.19, qty: 1, duty: 1, on: false, start: 20, room: 'Living', variant: 'Full-body', variantLabel: 'Chair type', variants: [{ label:'Compact massage seat', watts:100 },{ label:'Full-body', watts:180 },{ label:'Full-body with heating', watts:260 }], note: 'Heating, recline motors and massage intensity can change the power used during a session.' },
   { id: 'lights', name: 'LED lights', icon: '●', watts: 9, hours: 6, qty: 9, duty: 1, on: true, start: 18, end: 24, room: 'Whole house' },
   { id: 'rice', name: 'Rice cooker', icon: '◒', watts: 700, hours: 1.1, qty: 1, duty: 0.62, on: true, start: 17.5, end: 19, room: 'Kitchen' },
   { id: 'microwave', name: 'Microwave', icon: '▣', watts: 1200, hours: 0.15, qty: 1, duty: 1, on: false, start: 12.5, room: 'Kitchen' },
   { id: 'oven', name: 'Electric oven', icon: '▦', watts: 2400, hours: 0.5, qty: 1, duty: 0.75, on: false, start: 18, room: 'Kitchen' },
+  { id: 'induction', name: 'Induction cooker', icon: '◉', watts: 2000, hours: 0.75, qty: 1, duty: 0.65, on: false, start: 18, room: 'Kitchen', variant: 'Portable single hob', variantLabel: 'Cooker type', variants: [{ label:'Portable single hob', watts:2000 },{ label:'Built-in 2-zone · 2.8 kW', watts:2800 },{ label:'Built-in 2-zone · 3.5 kW', watts:3500 }], note: 'The selected wattage is the maximum input. Heat settings cycle or reduce power, so the estimate applies a typical cooking load.' },
+  { id: 'airfryer', name: 'Air fryer', icon: '◒', watts: 1500, hours: 0.3, qty: 1, duty: 0.72, on: false, start: 18, room: 'Kitchen', variant: 'Medium · 4–6L', variantLabel: 'Fryer size', variants: [{ label:'Small · 2–3L', watts:1200 },{ label:'Medium · 4–6L', watts:1500 },{ label:'Large / dual basket', watts:2000 }], note: 'The heating element cycles around the selected temperature rather than drawing full power continuously.' },
   { id: 'hood', name: 'Cooker hood', icon: '≋', watts: 180, hours: 1, qty: 1, duty: 1, on: false, start: 18, room: 'Kitchen', note: 'Kitchen smoke and exhaust fan' },
   { id: 'iron', name: 'Clothes iron', icon: '◢', watts: 1000, hours: 0.35, qty: 1, duty: .65, on: false, start: 16, room: 'Yard', variant: 'Dry iron', variantLabel: 'Iron type', variants: [{ label:'Dry iron', watts:1000, duty:.65 },{ label:'Basic steam iron', watts:1400, duty:.65 },{ label:'Cordless steam iron', watts:1800, duty:.55 },{ label:'High-power steam iron', watts:2300, duty:.6 },{ label:'Steam generator', watts:2400, duty:.7 }], note: 'The wattage is peak heating input. The thermostat cycles, so the estimate uses a typical on/off heating pattern.' },
+  { id: 'hairdryer', name: 'Hair dryer', icon: '≋', watts: 1500, hours: 0.17, qty: 1, duty: 1, on: false, start: 7.5, room: 'Bathroom', variant: 'Standard', variantLabel: 'Dryer type', variants: [{ label:'Compact / travel', watts:1000 },{ label:'Standard', watts:1500 },{ label:'High-power', watts:2000 }], note: 'Heat and speed settings affect the live wattage. The default represents normal heated use.' },
+  { id: 'vacuum', name: 'Vacuum cleaner', icon: '⌁', watts: 1400, hours: 0.29, qty: 1, duty: 1, on: false, start: 10, room: 'Whole house', variant: 'Corded canister', variantLabel: 'Vacuum type', variants: [{ label:'Cordless stick · eco', watts:90 },{ label:'Cordless stick · high', watts:250 },{ label:'Corded compact', watts:850 },{ label:'Corded canister', watts:1400 },{ label:'Wet & dry', watts:1500 },{ label:'Robot vacuum', watts:45 }], note: 'Cordless values represent approximate battery power while cleaning. Small charging and standby losses are covered by the house background estimate.' },
   { id: 'router', name: 'Wi‑Fi router', icon: '⌁', watts: 12, hours: 24, qty: 1, duty: 1, on: true, awayOn: true, start: 0, end: 24, room: 'Study' },
   { id: 'pc', name: 'Desktop PC setup', icon: '▣', watts: 340, hours: 4, qty: 1, duty: 0.72, on: true, start: 9, end: 18, room: 'Study', variant: 'Medium · 1 monitor', variantLabel: 'Workload & screens', variants: [{ label:'Light · 1 monitor', watts:140 },{ label:'Light · 2 monitors', watts:180 },{ label:'Medium · 1 monitor', watts:340 },{ label:'Medium · 2 monitors', watts:380 },{ label:'Heavy · 1 monitor', watts:640 },{ label:'Heavy · 2 monitors', watts:680 }], note: 'Light: documents and browsing. Medium: coding, photo work or casual gaming. Heavy: demanding games, 3D or video rendering. Estimate includes the monitor(s).' },
+  { id: 'laptop', name: 'Laptop computer', icon: '▱', watts: 65, hours: 6, qty: 1, duty: 0.65, on: false, start: 9, end: 18, room: 'Study', variant: 'Everyday laptop', variantLabel: 'Laptop type', variants: [{ label:'Light / compact', watts:45 },{ label:'Everyday laptop', watts:65 },{ label:'Performance laptop', watts:100 },{ label:'Gaming / workstation', watts:200 }], note: 'The charger rating is a safe maximum. Normal work usually draws less as the battery fills, so the estimate applies a typical operating load.' },
   { id: 'kettle', name: 'Kettle', icon: '◓', watts: 1800, hours: 0.2, qty: 1, duty: 1, on: true, start: 7, end: 7.3, room: 'Kitchen' },
   { id: 'ev', name: 'Home EV charging', icon: '⚡', watts: 7400, hours: 1.5, qty: 1, duty: 1, on: false, start: 0, room: 'Car porch', variant: 'Wallbox · 7.4 kW', variantLabel: 'Charger type', variants: [{ label:'Portable plug · 2.3 kW', watts:2300 },{ label:'Wallbox · 3.7 kW', watts:3700 },{ label:'Wallbox · 7.4 kW', watts:7400 },{ label:'3-phase · 11 kW', watts:11000 }], note: 'Adds to your home bill when charged at home' },
   { id: 'standby', name: 'Standby load', icon: '◌', watts: 32, hours: 24, qty: 1, duty: 1, on: true, awayOn: true, start: 0, end: 24, room: 'Whole house' }
@@ -46,10 +54,10 @@ const defaults = [
 
 const applianceCategories = [
   { name:'Always running', ids:['fridge','waterpurifier','freezer','router','standby'] },
-  { name:'Cooling', ids:['aircon','fan'] },
-  { name:'Kitchen', ids:['rice','microwave','oven','hood','kettle'] },
-  { name:'Laundry & bathroom', ids:['heater','washer','dryer','iron'] },
-  { name:'Entertainment & work', ids:['tv','lights','pc'] },
+  { name:'Cooling & air quality', ids:['aircon','fan','standingfan','airpurifier'] },
+  { name:'Kitchen', ids:['rice','microwave','oven','induction','airfryer','hood','kettle'] },
+  { name:'Laundry, cleaning & bathroom', ids:['heater','washer','dryer','iron','hairdryer','vacuum'] },
+  { name:'Entertainment, comfort & work', ids:['tv','lights','massagechair','pc','laptop'] },
   { name:'Transport', ids:['ev'] }
 ];
 defaults.forEach(a => a.included = Boolean(a.alwaysOn || a.on));
@@ -62,7 +70,12 @@ const usageProfiles = {
   oven: { usageMode:'cycles-per-week', usesPerWeek:3, minutesPerUse:70, usageNoun:'sessions' },
   hood: { usageMode:'cycles-per-week', usesPerWeek:7, minutesPerUse:60, usageNoun:'sessions' },
   iron: { usageMode:'cycles-per-week', usesPerWeek:2, minutesPerUse:74, usageNoun:'sessions' },
+  massagechair: { usageMode:'cycles-per-week', usesPerWeek:4, minutesPerUse:20, usageNoun:'sessions' },
+  hairdryer: { usageMode:'cycles-per-week', usesPerWeek:7, minutesPerUse:10, usageNoun:'uses' },
+  vacuum: { usageMode:'cycles-per-week', usesPerWeek:4, minutesPerUse:30, usageNoun:'sessions' },
   rice: { usageMode:'cycles-per-week', usesPerWeek:7, minutesPerUse:66, usageNoun:'cooks' },
+  induction: { usageMode:'cycles-per-week', usesPerWeek:7, minutesPerUse:45, usageNoun:'cooks' },
+  airfryer: { usageMode:'cycles-per-week', usesPerWeek:5, minutesPerUse:25, usageNoun:'cooks' },
   kettle: { usageMode:'cycles-per-week', usesPerWeek:14, minutesPerUse:6, usageNoun:'boils' },
   ev: { usageMode:'ev-distance', kmPerMonth:1500, kwhPer100km:18, chargingEfficiency:.9 }
 };

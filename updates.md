@@ -4,6 +4,13 @@ Last updated: 23 September 2026
 
 Repository: https://github.com/Flowtron22/myWATT
 
+## Broader household appliance catalogue
+
+- Add standing fans with conventional, energy-saving DC, and large-fan choices.
+- Add massage chairs, hair dryers, corded and cordless vacuum cleaners, air purifiers, induction cookers, air fryers, and laptop computers.
+- Give occasional-use appliances weekly session controls so their estimates reflect routines rather than implying daily continuous use.
+- Keep all new appliances optional so existing household setups and bill estimates remain unchanged.
+
 ## Current release
 
 myWATT??? is an educational household electricity planning sandbox by Ureka Games for Peninsular Malaysia. It estimates monthly energy use and the current charge using the RP4 domestic tariff model, September 2026 AFA input, and applicable protection rules.
