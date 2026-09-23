@@ -11,6 +11,7 @@ Repository: https://github.com/Flowtron22/myWATT
 - Use red, green, and blue to distinguish the top three consumers.
 - Remove repeated visible headings and explanations from the compact simulation card.
 - Overlay the appliance name, accumulated kWh, and estimated RM share directly on each full-width usage bar, without rank numbers or icons.
+- Stack accumulated kWh above its smaller RM-share value for faster scanning.
 - Show the final appliance breakdown when the selected simulation period completes.
 - Prioritize the simulation dashboard on small phones, using the house scene as a subtle background instead of the main content.
 

@@ -83,7 +83,7 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer;
 .currently-running .rank-fill { filter: brightness(1.12); }
 .rank-overlay { position: relative; z-index: 1; min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 7px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.72); }
 .rank-overlay > b { min-width: 0; overflow: hidden; font-size: .64rem; text-overflow: ellipsis; white-space: nowrap; }
-.rank-overlay > span { flex: 0 0 auto; display: flex; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums; }
+.rank-overlay > span { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-variant-numeric: tabular-nums; line-height: 1.05; }
 .rank-overlay strong { font-size: .61rem; }
 .rank-overlay small { color: #e7f2ff; font-size: .52rem; }
 .energy-leaderboard .ranking-empty { display: block; min-height: 0; padding: 10px; color: var(--muted); font-size: .65rem; text-align: center; }
