@@ -59,6 +59,7 @@ The estimate is for planning and comparison. It is not an official TNB bill.
 ## Appliance modelling
 
 - Appliance cards stay in a fixed order while settings are changed.
+- Restore optional product-label watts and annual kWh inputs inside “Add more details” for people who know their appliance specifications.
 - Everyday inputs include hours per day, days per week, showers per day, loads or sessions per week, and EV kilometres per month.
 - Individual units can be duplicated and configured separately.
 - Five-star efficiency choices are available for relevant appliances.

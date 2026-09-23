@@ -22,6 +22,7 @@ export const tariffConfig = Object.freeze({
 export const starMultipliers = Object.freeze({ 1: 1.18, 2: 1.09, 3: 1, 4: .91, 5: .82 });
 
 export function wattsFor(appliance) {
+  if (Number(appliance.customWatts) > 0) return Math.round(Number(appliance.customWatts));
   const base = appliance.variants
     ? (appliance.variants.find(variant => variant.label === appliance.variant)?.watts ?? appliance.watts)
     : appliance.watts;
@@ -59,6 +60,7 @@ export function usageDaysFor(appliance, { daysAtHome, daysPerMonth }, requestedD
 export function applianceEnergyForDays(appliance, state, requestedDays = null, includeWhenOff = false) {
   if ((!appliance.included || !appliance.on) && !includeWhenOff) return 0;
   const activeDays = requestedDays ?? (appliance.awayOn ? state.daysPerMonth : state.daysAtHome);
+  if (Number(appliance.customAnnualKwh) > 0) return Number(appliance.customAnnualKwh) / 12 * activeDays / state.daysPerMonth * appliance.qty;
   if (appliance.usageMode === 'ev-distance') {
     const fullMonth = (Number(appliance.kmPerMonth) || 0) * (Number(appliance.kwhPer100km) || 0) / 100 / Math.max(.5, Number(appliance.chargingEfficiency) || .9) * appliance.qty;
     return fullMonth * activeDays / state.daysPerMonth;

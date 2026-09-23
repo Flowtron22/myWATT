@@ -180,11 +180,14 @@ function renderPlanningDetails(a) {
   const weekly = !a.usageMode && scheduled;
   const isAircon = (a.templateId || a.id) === 'aircon';
   return `<details class="planning-details">
-    <summary>${isAircon ? 'Schedule &amp; room' : 'Schedule'}</summary>
+    <summary>Add more details</summary>
     <div class="planning-grid">
       ${scheduled ? `<label class="planning-field"><span>Typical start</span><input type="time" value="${timeInputValue(a.start)}" data-action="start-time" data-id="${a.id}"></label>` : ''}
       ${weekly ? `<label class="planning-field"><span>Days used / week</span><input type="number" min="1" max="7" step="1" value="${a.daysPerWeek || 7}" data-action="usage-value" data-field="daysPerWeek" data-id="${a.id}"></label>` : ''}
       ${isAircon ? `<label class="planning-field"><span>Room floor area (sq ft)</span><input type="number" min="50" max="2000" step="1" value="${a.roomAreaSqFt || 237}" data-action="usage-value" data-field="roomAreaSqFt" data-id="${a.id}"></label><label class="planning-field"><span>Thermostat °C</span><input type="number" min="16" max="30" step="1" value="${a.setpoint || 24}" data-action="usage-value" data-field="setpoint" data-id="${a.id}"></label><p class="planning-help">Floor area = room length × room width.</p>` : ''}
+      <label class="planning-field"><span>My label watts</span><input type="number" min="0" max="30000" step="1" value="${a.customWatts || ''}" placeholder="Optional" data-action="custom-watts" data-id="${a.id}" aria-label="${a.name} label watts"></label>
+      <label class="planning-field"><span>My label kWh/year</span><input type="number" min="0" max="50000" step="1" value="${a.customAnnualKwh || ''}" placeholder="Optional" data-action="custom-annual" data-id="${a.id}" aria-label="${a.name} label kWh per year"></label>
+      <p class="planning-help">Use these only when they appear on your product. Annual kWh replaces the monthly estimate; label watts replaces the estimated wattage and live kW.</p>
     </div>
     ${a.alwaysOn ? '' : `<div class="planning-actions"><button type="button" data-action="duplicate" data-id="${a.id}">Add separate unit</button></div>`}
   </details>`;
@@ -406,6 +409,12 @@ grid.addEventListener('input', (event) => {
     const a = appliances.find(item => item.id === id); if (!a) return;
     a[event.target.dataset.field] = Number(event.target.value); syncUsageHours(a); resetSimulation(false); updateBill(true); refreshApplianceSummary(a);
   }
+  if (event.target.dataset.action === 'custom-watts' || event.target.dataset.action === 'custom-annual') {
+    const a = appliances.find(item => item.id === id); if (!a) return;
+    const key = event.target.dataset.action === 'custom-watts' ? 'customWatts' : 'customAnnualKwh';
+    a[key] = Math.max(0, Number(event.target.value) || 0);
+    syncUsageHours(a); resetSimulation(false); updateBill(true); refreshApplianceSummary(a);
+  }
 });
 grid.addEventListener('change', (event) => {
   const id = event.target.dataset.id;
@@ -489,7 +498,7 @@ $('#scenarioLoad').addEventListener('click', () => {
   appliances.forEach(a => {
     if (a.included === undefined) a.included = true;
     if ((a.templateId || a.id) === 'aircon' && !a.roomAreaSqFt) a.roomAreaSqFt = Math.round((Number(a.roomSize) || 22) * 10.7639);
-    delete a.roomSize; delete a.customWatts; delete a.customAnnualKwh;
+    delete a.roomSize;
     syncUsageHours(a);
   });
   afaRate = Number.isFinite(saved.afaRate) ? Math.min(10, Math.max(-10, saved.afaRate)) : defaultAfa;
@@ -768,13 +777,13 @@ function registerWebMcp() {
   const tool={
     name:'configure_household_energy', title:'Configure household energy',
     description:'Set appliance usage, product size, energy-star rating and tariff plan in the visible myWATT simulation and return the updated monthly kWh and Malaysian bill estimate.',
-    inputSchema:{type:'object',properties:{appliances:{type:'array',items:{type:'object',properties:{id:{type:'string'},inHome:{type:'boolean'},hoursPerDay:{type:'number',minimum:0,maximum:24},quantity:{type:'integer',minimum:1,maximum:24},enabled:{type:'boolean'},variant:{type:'string'},compressorType:{type:'string'},stars:{type:'integer',minimum:1,maximum:5}},required:['id'],additionalProperties:false}},afaSenPerKwh:{type:'number',minimum:-10,maximum:10},touEnabled:{type:'boolean'}},additionalProperties:false},
+    inputSchema:{type:'object',properties:{appliances:{type:'array',items:{type:'object',properties:{id:{type:'string'},inHome:{type:'boolean'},hoursPerDay:{type:'number',minimum:0,maximum:24},quantity:{type:'integer',minimum:1,maximum:24},enabled:{type:'boolean'},variant:{type:'string'},compressorType:{type:'string'},stars:{type:'integer',minimum:1,maximum:5},labelWatts:{type:'number',minimum:0,maximum:30000},labelKwhPerYear:{type:'number',minimum:0,maximum:50000}},required:['id'],additionalProperties:false}},afaSenPerKwh:{type:'number',minimum:-10,maximum:10},touEnabled:{type:'boolean'}},additionalProperties:false},
     annotations:{readOnlyHint:false,untrustedContentHint:false},
     execute(input){
       if(!input || typeof input!=='object') throw new Error('Input must be an object.');
       if(input.afaSenPerKwh!==undefined){ if(!Number.isFinite(input.afaSenPerKwh)||input.afaSenPerKwh < -10||input.afaSenPerKwh > 10) throw new Error('AFA must be between -10 and 10 sen/kWh.'); afaRate=input.afaSenPerKwh; $('#afaSlider').value=afaRate; updateAfaLabel(); }
       if(input.touEnabled!==undefined) touEnabled=input.touEnabled;
-      if(input.appliances){ for(const update of input.appliances){ const a=appliances.find(x=>x.id===update.id); if(!a) throw new Error(`Unknown appliance id: ${update.id}`); if(a.alwaysOn && (update.enabled===false || update.inHome===false)) throw new Error(`${a.name} represents the unavoidable connected-home baseline and cannot be removed or switched off.`); if(update.inHome!==undefined) a.included=update.inHome; if(update.hoursPerDay!==undefined) a.hours=update.hoursPerDay; if(update.quantity!==undefined) a.qty=update.quantity; if(update.enabled!==undefined){ a.on=update.enabled; if(update.enabled) a.included=true; } if(update.stars!==undefined){ if(!a.stars) throw new Error(`${a.name} does not use the star-rating control.`); a.stars=update.stars; } if(update.variant!==undefined && !selectVariant(a, update.variant)) throw new Error(`Unknown ${a.name} variant: ${update.variant}`); if(update.compressorType!==undefined && !selectSecondaryVariant(a, update.compressorType)) throw new Error(`Unknown ${a.name} compressor type: ${update.compressorType}`); } }
+      if(input.appliances){ for(const update of input.appliances){ const a=appliances.find(x=>x.id===update.id); if(!a) throw new Error(`Unknown appliance id: ${update.id}`); if(a.alwaysOn && (update.enabled===false || update.inHome===false)) throw new Error(`${a.name} represents the unavoidable connected-home baseline and cannot be removed or switched off.`); if(update.inHome!==undefined) a.included=update.inHome; if(update.hoursPerDay!==undefined) a.hours=update.hoursPerDay; if(update.quantity!==undefined) a.qty=update.quantity; if(update.enabled!==undefined){ a.on=update.enabled; if(update.enabled) a.included=true; } if(update.stars!==undefined){ if(!a.stars) throw new Error(`${a.name} does not use the star-rating control.`); a.stars=update.stars; } if(update.labelWatts!==undefined) a.customWatts=update.labelWatts; if(update.labelKwhPerYear!==undefined) a.customAnnualKwh=update.labelKwhPerYear; if(update.variant!==undefined && !selectVariant(a, update.variant)) throw new Error(`Unknown ${a.name} variant: ${update.variant}`); if(update.compressorType!==undefined && !selectSecondaryVariant(a, update.compressorType)) throw new Error(`Unknown ${a.name} compressor type: ${update.compressorType}`); if(update.labelWatts!==undefined) syncUsageHours(a); } }
       renderAppliances(); updateBill(true); const bill=calculateBill(); return {monthlyKwh:Number(bill.kwh.toFixed(1)),estimatedBillRm:Number(bill.total.toFixed(2)),tariff:bill.useTou?'Domestic ToU':'Domestic General',peakKwh:Number(bill.peakKwh.toFixed(1)),offpeakKwh:Number(bill.offpeakKwh.toFixed(1)),protected:bill.protectedUser};
     }
   };

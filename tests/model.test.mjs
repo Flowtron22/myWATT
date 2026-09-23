@@ -6,7 +6,8 @@ import {
   integrateSimulationInterval,
   isActiveAtTime,
   isProtectionConfigCurrent,
-  tariffConfig
+  tariffConfig,
+  wattsFor
 } from '../dist/model.js';
 
 const state = { daysAtHome:30, daysPerMonth:30, representativeWeekdays:22 };
@@ -26,6 +27,13 @@ test('negative AFA is represented as a rebate for unprotected usage', () => asse
 test('days-per-week affects monthly energy', () => {
   const fiveDays = appliance({ daysPerWeek:5 });
   assert.equal(applianceEnergyForDays(fiveDays, state), 30 * 5 / 7);
+});
+test('product label watts override estimated appliance wattage', () => {
+  assert.equal(wattsFor(appliance({ watts:800, customWatts:1234 })), 1234);
+});
+test('annual label energy overrides watts and hours for the monthly estimate', () => {
+  const labelled = appliance({ watts:5000, hours:24, customAnnualKwh:1200 });
+  assert.equal(applianceEnergyForDays(labelled, state), 100);
 });
 test('days-per-week also affects live scheduled state', () => {
   const threeDays = appliance({ daysPerWeek:3 });
