@@ -75,19 +75,17 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer;
 .run-metrics b { display: block; margin-top: 2px; color: var(--cream); font-size: .73rem; font-variant-numeric: tabular-nums; }
 .energy-leaderboard { margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(98,201,255,.25); }
 .energy-leaderboard ol { max-height: 174px; margin: 0; padding: 0 3px 0 0; overflow-y: auto; list-style: none; scrollbar-color: rgba(98,201,255,.55) transparent; }
-.energy-leaderboard li { --rank-color: var(--yellow); display: grid; grid-template-columns: 18px 25px minmax(0,1fr); align-items: center; gap: 6px; min-height: 40px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.065); }
+.energy-leaderboard li { --rank-color: #d4a900; position: relative; min-height: 34px; margin-bottom: 5px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); border-radius: 5px; background: rgba(1,13,49,.72); }
 .energy-leaderboard .rank-1 { --rank-color: #ff625c; }
 .energy-leaderboard .rank-2 { --rank-color: #53db8b; }
 .energy-leaderboard .rank-3 { --rank-color: #62c9ff; }
-.rank-number { color: #759bd3; font-size: .6rem; font-weight: 900; text-align: center; }
-.rank-icon { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 7px; color: var(--ink); background: color-mix(in srgb, var(--rank-color) 82%, white); font-size: .7rem; }
-.currently-running .rank-icon { box-shadow: 0 0 10px color-mix(in srgb, var(--rank-color) 45%, transparent); }
-.rank-content { min-width: 0; }
-.rank-line { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
-.rank-line b { overflow: hidden; color: var(--cream); font-size: .64rem; text-overflow: ellipsis; white-space: nowrap; }
-.rank-line strong { flex: 0 0 auto; color: var(--rank-color); font-size: .61rem; font-variant-numeric: tabular-nums; }
-.rank-bar { position: relative; display: block; height: 5px; margin-top: 5px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.1); }
-.rank-bar::after { content: ""; display: block; width: var(--usage); height: 100%; border-radius: inherit; background: var(--rank-color); box-shadow: 0 0 8px color-mix(in srgb, var(--rank-color) 45%, transparent); transition: width .2s ease; }
+.rank-fill { position: absolute; inset: 0 auto 0 0; width: var(--usage); background: color-mix(in srgb, var(--rank-color) 72%, #092258); box-shadow: 0 0 12px color-mix(in srgb, var(--rank-color) 35%, transparent); transition: width .2s ease; }
+.currently-running .rank-fill { filter: brightness(1.12); }
+.rank-overlay { position: relative; z-index: 1; min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 7px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.72); }
+.rank-overlay > b { min-width: 0; overflow: hidden; font-size: .64rem; text-overflow: ellipsis; white-space: nowrap; }
+.rank-overlay > span { flex: 0 0 auto; display: flex; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums; }
+.rank-overlay strong { font-size: .61rem; }
+.rank-overlay small { color: #e7f2ff; font-size: .52rem; }
 .energy-leaderboard .ranking-empty { display: block; min-height: 0; padding: 10px; color: var(--muted); font-size: .65rem; text-align: center; }
 .occupancy-control { display: flex; justify-content: flex-end; align-items: center; margin-top: 8px; }
 .occupancy-control b { color: var(--cream); font-size: .65rem; }
@@ -308,9 +306,10 @@ footer a { color: #075bc8; font-size: .67rem; font-weight: 800; }
   .run-metrics { grid-template-columns: 1fr 1fr; }
   .run-metrics div { padding: 5px 7px; }
   .energy-leaderboard ol { max-height: 246px; }
-  .energy-leaderboard li { min-height: 42px; }
-  .rank-line b { font-size: .7rem; }
-  .rank-line strong { font-size: .66rem; }
+  .energy-leaderboard li { min-height: 38px; }
+  .rank-overlay { min-height: 36px; }
+  .rank-overlay > b { font-size: .7rem; }
+  .rank-overlay strong { font-size: .66rem; }
   .appliance-header { display: block; }
   .preset-row { margin-top: 12px; justify-content: flex-start; }
   .scenario-planner { grid-template-columns: 1fr; }

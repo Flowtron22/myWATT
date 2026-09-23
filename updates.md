@@ -8,8 +8,9 @@ Repository: https://github.com/Flowtron22/myWATT
 
 - Turn the billing run into a live appliance leaderboard that accumulates kWh for every included, switched-on appliance.
 - Keep the highest energy consumer at the top with proportional usage bars.
-- Simplify the meter into name-and-kWh rows with a clear bar beneath, using red, green, and blue for the top three consumers.
+- Use red, green, and blue to distinguish the top three consumers.
 - Remove repeated visible headings and explanations from the compact simulation card.
+- Overlay the appliance name, accumulated kWh, and estimated RM share directly on each full-width usage bar, without rank numbers or icons.
 - Show the final appliance breakdown when the selected simulation period completes.
 - Prioritize the simulation dashboard on small phones, using the house scene as a subtle background instead of the main content.
 
