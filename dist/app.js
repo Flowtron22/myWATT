@@ -153,18 +153,16 @@ function renderEnergyRanking(force = false) {
     }))
     .sort((left, right) => right.kwh - left.kwh || left.index - right.index);
   const leaderKwh = entries[0]?.kwh || 0;
-  const rankedKwh = entries.reduce((sum, entry) => sum + entry.kwh, 0);
-  const runningBill = calculateBill(runComplete ? monthlyKwh() : runKwh, touEnabled, runComplete ? null : { peakKwh:runPeakKwh, offpeakKwh:runOffpeakKwh });
   $('#rankingCaption').textContent = runComplete ? 'Final breakdown' : playing ? 'Updating live' : runKwh > 0 ? 'Paused' : 'Ready to measure';
   $('#energyRanking').innerHTML = entries.length ? entries.map(({ appliance, kwh }, rank) => {
-    const share = rankedKwh ? kwh / rankedKwh : 0;
-    const billShare = runningBill.total * share;
     const active = !runComplete && isActiveAtTime(appliance);
-    return `<li class="${active ? 'currently-running' : ''}">
+    return `<li class="rank-${rank + 1} ${active ? 'currently-running' : ''}">
       <span class="rank-number">${rank + 1}</span>
       <span class="rank-icon" aria-hidden="true">${appliance.icon}</span>
-      <span class="rank-appliance"><b>${escapeHtml(appliance.name)}</b><i style="--usage:${leaderKwh ? Math.max(2, kwh / leaderKwh * 100) : 0}%"></i></span>
-      <span class="rank-value"><b>${kwh.toFixed(kwh < 10 ? 2 : 1)} kWh</b><small>${currency(billShare)} share</small></span>
+      <span class="rank-content">
+        <span class="rank-line"><b>${escapeHtml(appliance.name)}</b><strong>${kwh.toFixed(kwh < 10 ? 2 : 1)} kWh</strong></span>
+        <i class="rank-bar" style="--usage:${leaderKwh ? Math.max(2, kwh / leaderKwh * 100) : 0}%"></i>
+      </span>
     </li>`;
   }).join('') : '<li class="ranking-empty">Switch on an appliance to measure it.</li>';
 }

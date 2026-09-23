@@ -74,24 +74,22 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer;
 .run-metrics span, .occupancy-control span { display: block; color: var(--muted); font-size: .75rem; }
 .run-metrics b { display: block; margin-top: 2px; color: var(--cream); font-size: .73rem; font-variant-numeric: tabular-nums; }
 .energy-leaderboard { margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(98,201,255,.25); }
-.leaderboard-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
-.leaderboard-heading b { color: var(--cream); font-size: .72rem; }
-.leaderboard-heading span { color: var(--mint); font-size: .75rem; }
 .energy-leaderboard ol { max-height: 174px; margin: 0; padding: 0 3px 0 0; overflow-y: auto; list-style: none; scrollbar-color: rgba(98,201,255,.55) transparent; }
-.energy-leaderboard li { display: grid; grid-template-columns: 18px 25px minmax(0,1fr) auto; align-items: center; gap: 6px; min-height: 34px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.065); }
+.energy-leaderboard li { --rank-color: var(--yellow); display: grid; grid-template-columns: 18px 25px minmax(0,1fr); align-items: center; gap: 6px; min-height: 40px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.065); }
+.energy-leaderboard .rank-1 { --rank-color: #ff625c; }
+.energy-leaderboard .rank-2 { --rank-color: #53db8b; }
+.energy-leaderboard .rank-3 { --rank-color: #62c9ff; }
 .rank-number { color: #759bd3; font-size: .6rem; font-weight: 900; text-align: center; }
-.rank-icon { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 7px; color: var(--ink); background: #d9edff; font-size: .7rem; }
-.currently-running .rank-icon { background: var(--yellow); box-shadow: 0 0 10px rgba(255,214,46,.38); }
-.rank-appliance { min-width: 0; }
-.rank-appliance b { display: block; overflow: hidden; color: var(--cream); font-size: .64rem; text-overflow: ellipsis; white-space: nowrap; }
-.rank-appliance i { position: relative; display: block; height: 4px; margin-top: 4px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.1); }
-.rank-appliance i::after { content: ""; display: block; width: var(--usage); height: 100%; border-radius: inherit; background: linear-gradient(90deg,var(--mint),var(--yellow)); transition: width .2s ease; }
-.rank-value { min-width: 62px; text-align: right; font-variant-numeric: tabular-nums; }
-.rank-value b, .rank-value small { display: block; }
-.rank-value b { color: var(--yellow); font-size: .61rem; }
-.rank-value small { margin-top: 2px; color: var(--muted); font-size: .52rem; }
+.rank-icon { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 7px; color: var(--ink); background: color-mix(in srgb, var(--rank-color) 82%, white); font-size: .7rem; }
+.currently-running .rank-icon { box-shadow: 0 0 10px color-mix(in srgb, var(--rank-color) 45%, transparent); }
+.rank-content { min-width: 0; }
+.rank-line { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.rank-line b { overflow: hidden; color: var(--cream); font-size: .64rem; text-overflow: ellipsis; white-space: nowrap; }
+.rank-line strong { flex: 0 0 auto; color: var(--rank-color); font-size: .61rem; font-variant-numeric: tabular-nums; }
+.rank-bar { position: relative; display: block; height: 5px; margin-top: 5px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.1); }
+.rank-bar::after { content: ""; display: block; width: var(--usage); height: 100%; border-radius: inherit; background: var(--rank-color); box-shadow: 0 0 8px color-mix(in srgb, var(--rank-color) 45%, transparent); transition: width .2s ease; }
 .energy-leaderboard .ranking-empty { display: block; min-height: 0; padding: 10px; color: var(--muted); font-size: .65rem; text-align: center; }
-.occupancy-control { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.occupancy-control { display: flex; justify-content: flex-end; align-items: center; margin-top: 8px; }
 .occupancy-control b { color: var(--cream); font-size: .65rem; }
 .occupancy-control em { color: var(--yellow); font-style: normal; }
 .run-card input { margin: 4px 0 2px; }
@@ -310,9 +308,9 @@ footer a { color: #075bc8; font-size: .67rem; font-weight: 800; }
   .run-metrics { grid-template-columns: 1fr 1fr; }
   .run-metrics div { padding: 5px 7px; }
   .energy-leaderboard ol { max-height: 246px; }
-  .energy-leaderboard li { min-height: 38px; }
-  .rank-appliance b { font-size: .7rem; }
-  .rank-value b { font-size: .66rem; }
+  .energy-leaderboard li { min-height: 42px; }
+  .rank-line b { font-size: .7rem; }
+  .rank-line strong { font-size: .66rem; }
   .appliance-header { display: block; }
   .preset-row { margin-top: 12px; justify-content: flex-start; }
   .scenario-planner { grid-template-columns: 1fr; }
