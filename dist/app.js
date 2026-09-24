@@ -140,6 +140,19 @@ function holidayBackgroundKwh() {
   const holidayDays = daysPerMonth - daysAtHome;
   return appliances.reduce((sum, a) => sum + (a.on && a.awayOn ? applianceEnergyForDays(a, holidayDays) : 0), 0);
 }
+function updateUsageMeter(kwh) {
+  const display = $('#usageMeterDigits');
+  const formatted = Math.min(999999.99, Math.max(0, Number(kwh) || 0)).toFixed(2).padStart(9, '0');
+  if (!display.childElementCount) {
+    display.innerHTML = [...formatted].map(character => character === '.'
+      ? '<span class="usage-meter-decimal" aria-hidden="true">.</span>'
+      : `<span class="usage-meter-digit" aria-hidden="true"><span class="usage-meter-wheel">${Array.from({ length:10 }, (_, digit) => `<i>${digit}</i>`).join('')}</span></span>`
+    ).join('');
+  }
+  const digits = formatted.replace('.', '');
+  display.querySelectorAll('.usage-meter-wheel').forEach((wheel, index) => wheel.style.setProperty('--digit', digits[index]));
+  display.setAttribute('aria-label', `${Number(kwh || 0).toFixed(2)} kilowatt-hours`);
+}
 function renderEnergyRanking(force = false) {
   const now = performance.now();
   if (!force && now - lastRankingRender < 120) return;
@@ -176,6 +189,7 @@ function updateSimulationPanel() {
   $('#runTarget').textContent = daysAtHome;
   $('#runProgress').style.width = `${progress * 100}%`;
   $('#runKwh').textContent = `${shownKwh.toFixed(1)} kWh`;
+  updateUsageMeter(shownKwh);
   const runningSplit = runComplete ? null : { peakKwh:runPeakKwh, offpeakKwh:runOffpeakKwh };
   $('#runBill').textContent = currency(calculateBill(shownKwh, touEnabled, runningSplit).total);
   $('#runState').textContent = daysAtHome === 0 ? 'HOLIDAY' : runComplete ? 'COMPLETE' : playing ? 'RUNNING' : 'READY';

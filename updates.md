@@ -4,6 +4,13 @@ Last updated: 24 September 2026
 
 Repository: https://github.com/Flowtron22/myWATT
 
+## Rolling energy meter
+
+- Add a mechanical-style kWh meter to the live billing run without extra branding or explanatory text.
+- Roll eight digits smoothly as simulated household energy accumulates, including two decimal places for visible low-usage movement.
+- Keep the meter synchronized with the existing energy and bill calculation through pause, reset, speed changes, and run completion.
+- Scale the digit display for compact phone screens without reducing leaderboard space.
+
 ## Live appliance energy ranking
 
 - Turn the billing run into a live appliance leaderboard that accumulates kWh for every included, switched-on appliance.
