@@ -19,7 +19,6 @@
   <meta name="twitter:description" content="Plan household electricity use and estimate your Malaysian bill.">
   <meta name="twitter:image" content="https://my-watt.vercel.app/og.png">
   <title>myWATT??? — Malaysian Electricity Planner</title>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect rx='14' width='64' height='64' fill='%23071612'/%3E%3Cpath d='M12 31 32 13l20 18v22H38V39H26v14H12Z' fill='%23f4c84a'/%3E%3Cpath d='m35 20-11 17h8l-3 13 12-19h-8Z' fill='%23071612'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./styles.css">
 </head>
@@ -60,8 +59,9 @@
         </div>
 
         <div class="scene-wrap" id="sceneWrap">
-          <canvas id="houseCanvas" aria-label="Interactive isometric house. Select an appliance to switch it on or off."></canvas>
-          <div class="scene-tooltip" id="sceneTooltip" role="status" aria-live="polite"></div>
+          <div class="sky-stars" aria-hidden="true"></div>
+          <div class="sky-orb" aria-hidden="true"></div>
+          <div class="sky-horizon" aria-hidden="true"></div>
           <div class="scene-legend"><span></span><b id="liveLoad">0.00 kW</b><em id="activeCount">0 appliances running</em></div>
           <section class="run-card" aria-labelledby="runTitle">
             <div class="run-heading">

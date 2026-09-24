@@ -21,7 +21,7 @@ Repository: https://github.com/Flowtron22/myWATT
 - Overlay the appliance name, accumulated kWh, and estimated RM share directly on each full-width usage bar, without rank numbers or icons.
 - Stack accumulated kWh above its smaller RM-share value for faster scanning.
 - Show the final appliance breakdown when the selected simulation period completes.
-- Prioritize the simulation dashboard on small phones, using the house scene as a subtle background instead of the main content.
+- Prioritize the centered simulation dashboard on small phones, with the day-and-night sky as lightweight atmosphere.
 
 ## Broader household appliance catalogue
 
@@ -36,9 +36,10 @@ myWATT??? is an educational household electricity planning sandbox by Ureka Game
 
 - The header uses the dedicated circular myWATT artwork as its brand mark.
 - The simulation scene reserves enough height for the complete live-billing card and its controls.
+- Replace the decorative Three.js house with a lightweight day-and-night sky driven by the simulation clock, and center the live meter as the primary visual.
 - First-time visitors see a concise notice that myWATT??? is an estimate-based planning simulation, not measured real-world usage or an official bill.
 - The estimated total keeps a compact simulation disclaimer visible after the welcome notice is dismissed.
-- Refresh the interface and animated house with the myWATT??? royal-blue, warm-yellow, and cream visual theme.
+- Keep the simulation interface within the myWATT??? royal-blue, warm-yellow, and cream visual theme.
 
 ## Mobile household builder
 
@@ -69,7 +70,7 @@ The estimate is for planning and comparison. It is not an official TNB bill.
 - Show air-conditioner room floor area in square feet and automatically convert room sizes in older saved scenarios.
 - Remove the advanced label-watts and annual-kWh override fields so appliance setup stays approachable.
 - Run a visible billing simulation for any number of days at home from 0 to 30, including holidays when selected always-on appliances continue running.
-- Watch live household demand, accumulated kWh, estimated running bill, time of day, and animated electricity flow.
+- Watch live household demand, accumulated kWh, estimated running bill, time of day, and the clock-driven sky transition.
 - Use 1x, 8x, or 24x simulation speed and reset the run at any time.
 - Save, reload, delete, and compare household scenarios locally in the browser.
 - Compare the estimate with a real bill using actual kWh, amount paid, and billing days.
@@ -80,8 +81,7 @@ The estimate is for planning and comparison. It is not an official TNB bill.
 - Use one shared calculation model for the monthly estimate, live load, and animated billing run.
 - Respect each appliance's days-per-week schedule during the live simulation and split ToU energy at the exact weekday peak boundary.
 - Limit elapsed animation time after a background-tab pause so returning to the page cannot create an unrealistic usage jump.
-- Pause Three.js rendering while the house scene or browser tab is hidden, then resume without catching up missed time.
-- Keep duplicated appliances linked to the correct house-scene control after units are added or removed.
+- Run animation frames only while the billing simulation is active, and resume without catching up missed time after a background-tab pause.
 - Update appliance hours without rebuilding the full card grid on every slider movement.
 - Show when the temporary 800 kWh protection configuration has expired instead of silently presenting it as current.
 - Add automated tests for tariff thresholds, AFA rebates, schedules, overnight operation, ToU splitting, and rule expiry.
@@ -106,4 +106,4 @@ The estimate is for planning and comparison. It is not an official TNB bill.
 
 ## Repository notes
 
-The browser build is contained in `dist/` and uses Three.js from a CDN. No build step is required to inspect the current version; serve `dist/` with any static web server.
+The browser build is contained in `dist/` with no external rendering library or build step. Serve `dist/` with any static web server.

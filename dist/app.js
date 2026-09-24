@@ -1,4 +1,3 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 import {
   applianceEnergyForDays as modelApplianceEnergyForDays,
   calculateBill as modelCalculateBill,
@@ -406,7 +405,7 @@ function updateBill(announce = false) {
   }
   updateScenarioComparison(b);
   updateCalibration(b);
-  updateSceneState();
+  updateLiveLoad();
   if (announce) $('#billTotal').setAttribute('aria-label', `Estimated bill ${currency(b.total)}`);
 }
 
@@ -621,7 +620,7 @@ function setTime(minute) {
   const h = Math.floor(simMinute / 60), m = Math.floor(simMinute % 60);
   $('#simTime').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
   updateSky();
-  updateSceneState();
+  updateLiveLoad();
 }
 $('#timeSlider').addEventListener('input', (e) => setTime(Number(e.target.value)));
 $('#playButton').addEventListener('click', () => {
@@ -630,6 +629,8 @@ $('#playButton').addEventListener('click', () => {
   playing = !playing;
   $('#playButton').setAttribute('aria-pressed', String(playing));
   $('#playButton').innerHTML = playing ? '<span>Ⅱ</span> Pause' : '<span>▶</span> Continue';
+  lastFrame = performance.now();
+  if (playing) scheduleFrame();
   updateSimulationPanel();
 });
 $('#runReset').addEventListener('click', () => resetSimulation());
@@ -648,150 +649,67 @@ document.querySelectorAll('[data-speed]').forEach(button => button.addEventListe
   });
 }));
 
-// Three.js flat-isometric house
-const canvas = $('#houseCanvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x063c9d, 15, 28);
-const camera = new THREE.OrthographicCamera(-8, 8, 6, -6, .1, 100);
-camera.position.set(11, 12, 13); camera.lookAt(0,0,0);
-scene.add(new THREE.HemisphereLight(0xfff4c9, 0x061b55, 2.5));
-const sun = new THREE.DirectionalLight(0xffed9a, 4.2); sun.position.set(7,12,8); sun.castShadow = true; scene.add(sun);
-const group = new THREE.Group(); group.rotation.y = -.08; scene.add(group);
-const applianceMeshes = new Map();
-const roomLights = [];
-function box(w,h,d,color,x,y,z, name='', emissive=0x000000) {
-  const material = new THREE.MeshStandardMaterial({ color, roughness: .72, emissive, emissiveIntensity: 0 });
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), material); mesh.position.set(x,y,z); mesh.castShadow = true; mesh.receiveShadow = true; if (name) mesh.userData.applianceId = name; group.add(mesh); return mesh;
-}
-box(13,.3,9,0x0847a5,0,-.2,0);
-// Room floors and low walls
-box(5.8,.12,4.1,0xe9dfc8,-3,.02,-2.25); box(5.8,.12,4.1,0xcfe9f8,3,.02,-2.25);
-box(5.8,.12,4.1,0xf0dca8,-3,.02,2.25); box(5.8,.12,4.1,0xc6e0f2,3,.02,2.25);
-box(12,.85,.16,0xfff8e8,0,.55,-4.35); box(.16,.85,8.7,0xfff8e8,-6,.55,0); box(.16,.85,8.7,0xfff8e8,6,.55,0); box(12,.85,.16,0xfff8e8,0,.55,4.35);
-box(.14,.55,8.5,0x1d62c1,0,.4,0); box(11.8,.55,.14,0x1d62c1,0,.4,0);
-// Furniture and appliances; restrained, toy-like geometry
-box(3.1,.65,1.4,0x1764c9,-3,.42,3.0); box(1.2,.38,1.2,0xffd62e,-3,.26,1.8); // sofa/table
-const tv = box(1.7,1.05,.16,0x04194f,-5.1,.75,1.3,'tv',0xffd62e); applianceMeshes.set('tv', tv);
-box(3.2,.55,2.2,0xfff6dc,3,.34,2.55); box(3.2,.16,.22,0x5c91cf,3,1.05,3.58); // bed
-const ac = box(1.55,.48,.42,0xe9f2f8,4.5,1.15,.5,'aircon',0x62c9ff); applianceMeshes.set('aircon', ac);
-box(4.8,.68,.72,0x1764c9,-3,.43,-3.2); // kitchen bench
-const fridge = box(1.15,2.2,1.0,0xe2edf5,-5.0,1.17,-2.1,'fridge',0x62c9ff); applianceMeshes.set('fridge', fridge);
-const freezer = box(1.25,.8,.9,0xd4e4ef,-4.0,.5,-3.15,'freezer',0x62c9ff); applianceMeshes.set('freezer', freezer);
-const rice = box(.65,.6,.65,0xf5f0e5,-2.8,.92,-3.15,'rice',0xffd62e); applianceMeshes.set('rice', rice);
-const kettle = box(.42,.62,.42,0x082b70,-1.75,.92,-3.15,'kettle',0xff7248); applianceMeshes.set('kettle', kettle);
-const microwave = box(.8,.48,.52,0x0a347f,-.85,.9,-3.15,'microwave',0xff7248); applianceMeshes.set('microwave', microwave);
-const waterpurifier = box(.48,.9,.46,0xe7f1f7,-3.95,1.32,-3.15,'waterpurifier',0x62c9ff); applianceMeshes.set('waterpurifier', waterpurifier);
-const oven = box(.9,1.0,.7,0x082b70,-1.3,.54,-2.0,'oven',0xff7248); applianceMeshes.set('oven', oven);
-const hood = box(1.4,.25,.62,0xc7d9e5,-2.3,1.75,-3.1,'hood',0xffd62e); applianceMeshes.set('hood', hood);
-box(2.3,.7,.65,0x1457b6,3,.45,-3.25); // desk
-const pc = box(.85,1.15,.65,0x04194f,4.8,.62,-3.0,'pc',0x62c9ff); applianceMeshes.set('pc', pc);
-const pcMonitor1 = box(.72,.46,.1,0x061f5d,2.65,1.03,-3.25,'',0x62c9ff);
-const pcMonitor2 = box(.72,.46,.1,0x061f5d,3.48,1.03,-3.25,'',0x62c9ff);
-const washer = box(1.1,1.15,1.0,0xe8eff5,1.15,.62,-2.85,'washer',0x62c9ff); applianceMeshes.set('washer', washer);
-const dryer = box(1.1,1.15,1.0,0xd8e3eb,2.45,.62,-2.85,'dryer',0xff7248); applianceMeshes.set('dryer', dryer);
-const iron = box(.62,.24,.3,0xeee3d8,3.45,.84,-3.25,'iron',0xff7248); iron.rotation.y = -.28; applianceMeshes.set('iron', iron);
-const heater = box(.56,1.1,.5,0xeee9dc,5.25,.75,-1.3,'heater',0xff7248); applianceMeshes.set('heater', heater);
-const router = box(.58,.16,.42,0x061f5d,2.1,.86,-3.25,'router',0x62c9ff); applianceMeshes.set('router', router);
-const ev = box(2.7,.58,1.35,0x1457b6,3.4,.05,5.05,'ev',0x62c9ff); applianceMeshes.set('ev', ev);
-box(.56,.44,.38,0xffd62e,5.1,.22,4.7); // wallbox
-// bulbs/fans as interactive tokens
-[[-3,2.1,2.2],[3,2.1,2.2],[-3,2.1,-2.2],[3,2.1,-2.2]].forEach((p,i)=>{ const bulb = new THREE.PointLight(0xffd85a,0,4); bulb.position.set(...p); group.add(bulb); roomLights.push(bulb); const orb = new THREE.Mesh(new THREE.SphereGeometry(.13,12,12), new THREE.MeshBasicMaterial({color:0xffd62e})); orb.position.set(...p); orb.userData.applianceId='lights'; group.add(orb); if(i===0) applianceMeshes.set('lights',orb); });
-const fan = new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.08,16), new THREE.MeshStandardMaterial({color:0x1457b6})); fan.position.set(-2.7,2.05,1.9); fan.userData.applianceId='fan'; group.add(fan); applianceMeshes.set('fan',fan);
-const powerHub = new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.16,18), new THREE.MeshStandardMaterial({color:0xffd62e,emissive:0xffd62e,emissiveIntensity:1.5}));
-powerHub.position.set(0,.22,0); group.add(powerHub);
-const energyFlows = [];
-applianceMeshes.forEach((mesh,id) => {
-  const start = new THREE.Vector3(0,.24,0);
-  const end = mesh.position.clone(); end.y = Math.max(.24,end.y*.62);
-  const mid = new THREE.Vector3(end.x,.24,0);
-  const curve = new THREE.CatmullRomCurve3([start,mid,end]);
-  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(24)), new THREE.LineBasicMaterial({color:0xffd62e,transparent:true,opacity:.08}));
-  group.add(line);
-  const pulses = [0,.5].map(offset => { const orb=new THREE.Mesh(new THREE.SphereGeometry(.075,10,10),new THREE.MeshBasicMaterial({color:0xffe888,transparent:true,opacity:.95})); orb.visible=false; group.add(orb); return {orb,offset}; });
-  energyFlows.push({id,curve,line,pulses});
-});
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(40,40), new THREE.MeshStandardMaterial({color:0x031644,roughness:1})); ground.rotation.x=-Math.PI/2; ground.position.y=-.38; ground.receiveShadow=true; scene.add(ground);
-const stars = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({color:0x9edcff,size:.06,transparent:true,opacity:0}));
-const starData=[]; for(let i=0;i<220;i++) starData.push((Math.random()-.5)*30,Math.random()*12+3,(Math.random()-.5)*22); stars.geometry.setAttribute('position',new THREE.Float32BufferAttribute(starData,3)); scene.add(stars);
-
 function isActiveAtTime(a) { return modelIsActiveAtTime(a, simMinute, simDay || 1); }
 function updateLiveLoad() {
   const active = appliances.filter(isActiveAtTime);
   const kw = liveLoadKwAt(appliances, simMinute, simDay || 1);
   $('#liveLoad').textContent = `${kw.toFixed(2)} kW`;
   $('#activeCount').textContent = `${active.length} appliance${active.length === 1 ? '' : 's'} running`;
-  energyFlows.forEach(flow => {
-    const on = active.some(a => (a.templateId || a.id) === flow.id);
-    flow.line.material.opacity = on ? .42 : .045;
-    flow.pulses.forEach(p => p.orb.visible = on);
-  });
 }
-function relatedSceneAppliances(id) { return appliances.filter(a => a.included !== false && (a.templateId || a.id) === id); }
-function updateSceneState() {
-  applianceMeshes.forEach((mesh, id) => {
-    const related = relatedSceneAppliances(id);
-    const active = related.some(isActiveAtTime);
-    const enabled = related.some(a => a.on);
-    mesh.visible = related.length > 0;
-    if (mesh?.material?.emissive) mesh.material.emissiveIntensity = active ? .9 : (enabled ? .16 : 0);
-    mesh.scale.y = enabled ? 1.04 : 1;
-  });
-  const lightsOn = appliances.some(a=>(a.templateId || a.id)==='lights' && isActiveAtTime(a));
-  const pcSetup = appliances.find(a=>a.included !== false && (a.templateId || a.id)==='pc' && a.on);
-  pcMonitor1.visible = Boolean(pcSetup?.on);
-  pcMonitor2.visible = Boolean(pcSetup?.on && pcSetup.variant?.includes('2 monitors'));
-  pcMonitor1.material.emissiveIntensity = isActiveAtTime(pcSetup) ? .5 : .08;
-  pcMonitor2.material.emissiveIntensity = isActiveAtTime(pcSetup) ? .5 : .08;
-  roomLights.forEach(light => light.intensity = lightsOn && (simMinute/60 > 17 || simMinute/60 < 6) ? 8 : 0);
-  updateLiveLoad();
+
+const skyStops = [
+  { hour:0, top:'#020b2a', bottom:'#0a2359' },
+  { hour:5, top:'#07143d', bottom:'#193a72' },
+  { hour:7.5, top:'#715eaa', bottom:'#f1a36d' },
+  { hour:12, top:'#0f6ddd', bottom:'#62c9ff' },
+  { hour:17, top:'#1778d8', bottom:'#77cfff' },
+  { hour:19, top:'#49347f', bottom:'#ef805f' },
+  { hour:21, top:'#07143d', bottom:'#163769' },
+  { hour:24, top:'#020b2a', bottom:'#0a2359' }
+];
+function hexChannels(hex) {
+  const value = Number.parseInt(hex.slice(1), 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+function blendHex(from, to, amount) {
+  const left = hexChannels(from), right = hexChannels(to);
+  const channels = left.map((channel, index) => Math.round(channel + (right[index] - channel) * amount));
+  return `rgb(${channels.join(',')})`;
+}
+function skyPalette(hour) {
+  const rightIndex = skyStops.findIndex(stop => hour <= stop.hour);
+  const right = skyStops[Math.max(1, rightIndex)];
+  const left = skyStops[Math.max(0, Math.max(1, rightIndex) - 1)];
+  const amount = (hour - left.hour) / Math.max(.01, right.hour - left.hour);
+  return { top:blendHex(left.top, right.top, amount), bottom:blendHex(left.bottom, right.bottom, amount) };
 }
 function updateSky() {
-  const hour = simMinute/60;
-  const daylight = Math.max(0, Math.sin(((hour-6)/12)*Math.PI));
-  const bg = new THREE.Color().lerpColors(new THREE.Color(0x031644), new THREE.Color(0x0870df), daylight*.72);
-  renderer.setClearColor(bg,1); scene.fog.color.copy(bg);
-  sun.intensity = .8 + daylight*3.8; stars.material.opacity = 1-daylight;
-  roomLights.forEach(light => light.intensity = appliances.some(a=>(a.templateId || a.id)==='lights' && isActiveAtTime(a)) && daylight < .25 ? 8 : 0);
+  const wrap = $('#sceneWrap');
+  const hour = simMinute / 60;
+  const palette = skyPalette(hour);
+  const daylight = Math.max(0, Math.sin(((hour - 6) / 12) * Math.PI));
+  const isDay = hour >= 6 && hour < 18;
+  const orbitProgress = isDay ? (hour - 6) / 12 : ((hour + 6) % 24) / 12;
+  const orbX = 8 + orbitProgress * 84;
+  const orbY = 72 - Math.sin(orbitProgress * Math.PI) * 58;
+  wrap.style.background = `linear-gradient(180deg,${palette.top} 0%,${palette.bottom} 100%)`;
+  wrap.style.setProperty('--stars-opacity', String(Math.max(0, Math.min(1, 1 - daylight * 1.8))));
+  wrap.style.setProperty('--orb-x', `${orbX}%`);
+  wrap.style.setProperty('--orb-y', `${orbY}%`);
+  wrap.style.setProperty('--orb-color', isDay ? '#ffd62e' : '#e7f2ff');
+  wrap.style.setProperty('--orb-glow', isDay ? 'rgba(255,214,46,.48)' : 'rgba(158,220,255,.25)');
 }
 
-const pointer = new THREE.Vector2(), raycaster = new THREE.Raycaster();
-function hitFromEvent(event) {
-  const rect = canvas.getBoundingClientRect(); pointer.x=((event.clientX-rect.left)/rect.width)*2-1; pointer.y=-((event.clientY-rect.top)/rect.height)*2+1; raycaster.setFromCamera(pointer,camera);
-  return raycaster.intersectObjects(group.children,false).find(hit=>hit.object.userData.applianceId);
-}
-canvas.addEventListener('pointermove', e => {
-  const hit=hitFromEvent(e), tip=$('#sceneTooltip');
-  if(!hit){tip.classList.remove('show'); return;}
-  const related=relatedSceneAppliances(hit.object.userData.applianceId); if(!related.length){tip.classList.remove('show'); return;} const activeCount=related.filter(a=>a.on).length; tip.textContent=`${related[0].name.replace(/ \d+$/, '')}${related.length > 1 ? ` · ${related.length} units` : ''} · ${activeCount ? 'ON' : 'OFF'}`; const rect=$('#sceneWrap').getBoundingClientRect(); tip.style.left=`${e.clientX-rect.left}px`; tip.style.top=`${e.clientY-rect.top}px`; tip.classList.add('show');
-});
-canvas.addEventListener('pointerleave',()=>$('#sceneTooltip').classList.remove('show'));
-canvas.addEventListener('click', e => {
-  const hit=hitFromEvent(e); if(!hit) return;
-  const related=relatedSceneAppliances(hit.object.userData.applianceId); if(!related.length) return;
-  const turnOn=!related.some(a=>a.on); related.forEach(a=>a.on=turnOn);
-  resetSimulation(false); renderAppliances(); updateBill(true);
-});
-
-function resize() {
-  const rect=canvas.getBoundingClientRect(); renderer.setSize(rect.width,rect.height,false); const aspect=rect.width/rect.height; const view=7.2; camera.left=-view*aspect; camera.right=view*aspect; camera.top=view; camera.bottom=-view; camera.updateProjectionMatrix();
-}
-new ResizeObserver(resize).observe(canvas);
 let animationFrameId = 0;
-let sceneVisible = true;
 function scheduleFrame() {
-  if (!animationFrameId && (sceneVisible || playing) && !document.hidden) animationFrameId = requestAnimationFrame(animate);
+  if (!animationFrameId && playing && !document.hidden) animationFrameId = requestAnimationFrame(animate);
 }
 function animate(now) {
   animationFrameId = 0;
-  if(playing){
-    const elapsedMs = Math.min(100, Math.max(0, now-lastFrame));
-    const requestedMinutes = elapsedMs*.02*simSpeed;
-    const remainingMinutes = Math.max(0, (daysAtHome-simDay+1)*1440-simMinute);
+  if (playing) {
+    const elapsedMs = Math.min(100, Math.max(0, now - lastFrame));
+    const requestedMinutes = elapsedMs * .02 * simSpeed;
+    const remainingMinutes = Math.max(0, (daysAtHome - simDay + 1) * 1440 - simMinute);
     const simulatedMinutes = Math.min(requestedMinutes, remainingMinutes);
     const interval = integrateSimulationInterval(appliances, { startDay:simDay || 1, startMinute:simMinute, durationMinutes:simulatedMinutes });
     runKwh += interval.totalKwh;
@@ -808,41 +726,13 @@ function animate(now) {
     }
     updateSimulationPanel();
   }
-  lastFrame=now;
-  if (sceneVisible) {
-    const fanA=appliances.find(a=>(a.templateId || a.id)==='fan' && isActiveAtTime(a)); if(fanA) fan.rotation.y += .07;
-    energyFlows.forEach((flow,flowIndex) => flow.pulses.forEach(p => {
-      if (!p.orb.visible) return;
-      const progress = (now*.00034*(1+Math.min(simSpeed,8)*.06) + p.offset + flowIndex*.083) % 1;
-      p.orb.position.copy(flow.curve.getPoint(progress));
-      const pulse = .72 + Math.sin(now*.012 + flowIndex)*.24;
-      p.orb.scale.setScalar(pulse);
-    }));
-    [...applianceMeshes.entries()].forEach(([id,mesh],index) => {
-      if(mesh.userData.baseY===undefined) mesh.userData.baseY=mesh.position.y;
-      const active=appliances.some(a=>(a.templateId || a.id)===id && isActiveAtTime(a));
-      mesh.position.y=mesh.userData.baseY+(active?Math.sin(now*.004+index)*.025:0);
-      if(active && mesh.material?.emissive) mesh.material.emissiveIntensity=.72+Math.sin(now*.006+index)*.24;
-    });
-    if(appliances.some(a=>(a.templateId || a.id)==='tv' && isActiveAtTime(a))) tv.material.emissiveIntensity=.55+Math.random()*.55;
-    powerHub.rotation.y += .012;
-    powerHub.scale.setScalar(.94+Math.sin(now*.006)*.08);
-    renderer.render(scene,camera);
-  }
-  scheduleFrame();
-}
-
-if ('IntersectionObserver' in window) {
-  new IntersectionObserver(([entry]) => {
-    sceneVisible = entry.isIntersecting;
-    if (sceneVisible) { lastFrame = performance.now(); scheduleFrame(); }
-  }, { threshold:.01 }).observe(canvas);
+  lastFrame = now;
+  if (playing) scheduleFrame();
 }
 document.addEventListener('visibilitychange', () => {
   lastFrame = performance.now();
-  if (!document.hidden) scheduleFrame();
+  if (!document.hidden && playing) scheduleFrame();
 });
-
 function registerWebMcp() {
   const context=document.modelContext; if(!context?.registerTool) return;
   const tool={
@@ -861,4 +751,4 @@ function registerWebMcp() {
   try { void Promise.resolve(context.registerTool(tool)).catch(()=>{}); } catch {}
 }
 
-renderAppliances(); updateAfaLabel(); updateTariffStatus(); updateBill(); setTime(simMinute); updateSimulationPanel(); registerWebMcp(); resize(); scheduleFrame();
+renderAppliances(); updateAfaLabel(); updateTariffStatus(); updateBill(); setTime(simMinute); updateSimulationPanel(); registerWebMcp();
