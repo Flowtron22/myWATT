@@ -34,6 +34,8 @@ Repository: https://github.com/Flowtron22/myWATT
 
 myWATT??? is an educational household electricity planning sandbox by Ureka Games for Peninsular Malaysia. It estimates monthly energy use and the current charge using the RP4 domestic tariff model, September 2026 AFA input, and applicable protection rules.
 
+- The header uses a circular crop of the myWATT OG artwork as its brand mark.
+- The simulation scene reserves enough height for the complete live-billing card and its controls.
 - Refresh the interface and animated house with the myWATT??? royal-blue, warm-yellow, and cream visual theme.
 
 ## Mobile household builder
