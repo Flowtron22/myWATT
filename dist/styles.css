@@ -56,45 +56,6 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer;
 .scene-wrap { position: relative; height: min(55vh, 560px); min-height: 480px; margin-top: 22px; border: 1px solid rgba(98,201,255,.6); border-radius: 24px; overflow: hidden; background: #063c9d; box-shadow: 0 24px 80px rgba(0,13,57,.34), inset 0 0 70px rgba(29,121,255,.16); }
 #houseCanvas { width: 100%; height: 100%; display: block; cursor: grab; }
 #houseCanvas:active { cursor: grabbing; }
-.visual-mode-switch { position: absolute; z-index: 5; top: 17px; left: 50%; display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: rgba(3,27,86,.84); backdrop-filter: blur(9px); transform: translateX(-50%); }
-.visual-mode-switch button { border: 0; border-radius: 999px; padding: 6px 9px; color: var(--muted); background: transparent; cursor: pointer; font-size: .63rem; font-weight: 900; }
-.visual-mode-switch button.active { color: var(--ink); background: var(--yellow); }
-.visual-mode-switch sup { font-size: .48rem; }
-.cutaway-house[hidden] { display: none; }
-.cutaway-house { position: absolute; z-index: 1; inset: 66px 18px 16px 334px; padding: 13px; border: 2px solid rgba(255,246,220,.82); border-radius: 18px 18px 8px 8px; background: linear-gradient(180deg,#1358b2 0,#0a3c8a 74%,#082c68 100%); box-shadow: 0 18px 42px rgba(0,13,57,.32), inset 0 0 35px rgba(98,201,255,.13); transition: background .35s; }
-.cutaway-house::before { content:""; position:absolute; z-index:-1; left:50%; top:-30px; width:72%; height:62px; border:3px solid rgba(255,246,220,.85); border-bottom:0; background:#0b367c; transform:translateX(-50%) perspective(140px) rotateX(22deg); clip-path:polygon(50% 0,100% 100%,0 100%); }
-.cutaway-house::after { content:""; position:absolute; z-index:2; left:50%; top:8%; bottom:12%; width:3px; border-radius:3px; background:linear-gradient(transparent,var(--yellow) 12%,var(--yellow) 88%,transparent); box-shadow:0 0 12px rgba(255,214,46,.7); opacity:.7; }
-.cutaway-house.night { background:linear-gradient(180deg,#06275f 0,#041b4f 74%,#03153d 100%); }
-.scene-wrap.cutaway-mode { min-height:520px; }
-.cutaway-grid { height:100%; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:minmax(0,1fr) minmax(0,1fr) auto; gap:5px; }
-.cutaway-room { position:relative; min-width:0; overflow:hidden; border:1px solid rgba(255,255,255,.2); background:linear-gradient(180deg,rgba(226,240,252,.94) 0 68%,rgba(211,177,111,.9) 68%); box-shadow:inset 0 -12px 20px rgba(64,32,8,.12); }
-.cutaway-room:nth-child(2n) { background:linear-gradient(180deg,rgba(214,236,247,.94) 0 68%,rgba(184,207,219,.92) 68%); }
-.cutaway-room h3 { position:relative; z-index:3; display:inline-block; margin:7px; padding:3px 6px; border-radius:5px; color:#eaf5ff; background:rgba(4,25,79,.78); font-size:.52rem; letter-spacing:.04em; }
-.cutaway-room::before { content:""; position:absolute; z-index:2; left:0; right:0; bottom:7px; height:3px; background:var(--yellow); box-shadow:0 0 11px rgba(255,214,46,.9); opacity:0; transform:scaleX(.2); transform-origin:left; transition:opacity .2s,transform .25s; }
-.cutaway-room.has-power::before { opacity:1; transform:scaleX(1); animation:power-shimmer 1.2s linear infinite; }
-.cutaway-room.utility { grid-column:1 / -1; min-height:62px; background:linear-gradient(180deg,rgba(31,103,167,.94),rgba(17,69,123,.96)); }
-.room-furniture { position:absolute; z-index:0; right:8px; bottom:13px; width:54px; height:25px; border-radius:4px 4px 2px 2px; background:rgba(8,47,111,.2); box-shadow:-21px 4px 0 rgba(255,214,46,.22); }
-.bedroom .room-furniture { width:72px; height:27px; background:rgba(30,91,174,.3); box-shadow:0 -9px 0 -4px rgba(255,253,246,.7); }
-.bath .room-furniture { width:31px; height:42px; border:5px solid rgba(255,255,255,.45); border-radius:50% 50% 4px 4px; background:rgba(30,91,174,.18); }
-.living .room-furniture { width:72px; height:24px; border-radius:14px 14px 4px 4px; background:rgba(22,91,183,.33); }
-.kitchen .room-furniture { width:86px; height:30px; background:repeating-linear-gradient(90deg,rgba(103,62,28,.35) 0 20px,rgba(255,255,255,.35) 20px 22px); }
-.utility .room-furniture { width:90px; height:23px; background:rgba(255,214,46,.2); }
-.cutaway-appliances { position:absolute; z-index:4; inset:29px 6px 12px; display:grid; grid-template-columns:1fr; align-content:start; gap:4px; overflow:auto; scrollbar-width:none; }
-.utility .cutaway-appliances { inset:28px 6px 5px; display:flex; overflow-x:auto; }
-.utility .cutaway-device { flex:1 0 120px; min-height:27px; }
-.cutaway-appliances::-webkit-scrollbar { display:none; }
-.cutaway-device { min-width:0; min-height:25px; display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:center; gap:5px; padding:2px 5px; overflow:hidden; border:1px solid rgba(5,51,127,.25); border-radius:7px; color:#13366f; background:rgba(255,255,255,.78); box-shadow:0 3px 8px rgba(2,30,80,.12); cursor:pointer; text-align:left; opacity:.58; }
-.cutaway-device.enabled { opacity:.82; }
-.cutaway-device.active { border-color:var(--yellow); color:#031b56; background:#fffdf2; box-shadow:0 0 0 1px rgba(255,214,46,.45),0 0 14px rgba(255,214,46,.64); opacity:1; animation:device-breathe 1.25s ease-in-out infinite; }
-.cutaway-device > span { width:19px; height:19px; display:grid; place-items:center; border-radius:50%; color:#fff; background:#0a55b7; font-size:.6rem; }
-.cutaway-device.active > span { color:#04194f; background:var(--yellow); }
-.cutaway-device b { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.56rem; }
-.cutaway-device strong { color:#0a55b7; font-size:.51rem; white-space:nowrap; font-variant-numeric:tabular-nums; }
-.cutaway-device.active strong { color:#08723f; }
-.appliance-card.focus-pulse { animation:card-focus 1.1s ease-out; }
-@keyframes power-shimmer { 50% { filter:brightness(1.5); } }
-@keyframes device-breathe { 50% { transform:translateY(-1px); } }
-@keyframes card-focus { 0%,100% { box-shadow:none; } 30% { box-shadow:0 0 0 3px var(--yellow),0 0 24px rgba(255,214,46,.5); } }
 .scene-legend, .weather-pill { position: absolute; top: 17px; padding: 9px 12px; border-radius: 999px; background: rgba(3,27,86,.82); border: 1px solid var(--line); backdrop-filter: blur(8px); font-size: .72rem; color: #e5f2ff; }
 .scene-legend { left: 17px; display: flex; gap: 8px; align-items: center; }
 .scene-legend span { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); box-shadow: 0 0 12px var(--yellow); }
@@ -345,23 +306,8 @@ footer a { color: #075bc8; font-size: .67rem; font-weight: 800; }
   .play-wrap { justify-items: start; }
   .play-wrap small { text-align: left; }
   .scene-wrap { height: auto; min-height: 0; border-radius: 18px; }
-  .scene-wrap.cutaway-mode { min-height:0; }
   #houseCanvas { position: absolute; inset: 0; height: 100%; opacity: .14; pointer-events: none; filter: saturate(.7); }
   .scene-legend { position: relative; top: auto; left: auto; z-index: 3; width: max-content; margin: 12px 12px 0; }
-  .visual-mode-switch { position:relative; top:auto; left:auto; width:max-content; margin:8px 12px 0; transform:none; }
-  .cutaway-house { position:relative; inset:auto; height:350px; margin:10px 12px 0; padding:9px; border-radius:15px; }
-  .cutaway-house::before { display:none; }
-  .cutaway-house::after { display:none; }
-  .cutaway-grid { display:flex; gap:8px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:thin; }
-  .cutaway-room, .cutaway-room.utility { flex:0 0 88%; min-height:100%; grid-column:auto; scroll-snap-align:center; border-radius:10px; }
-  .cutaway-room h3 { margin:9px; font-size:.62rem; }
-  .cutaway-appliances { inset:38px 8px 15px; grid-template-columns:1fr; gap:6px; }
-  .utility .cutaway-appliances { inset:38px 8px 15px; display:grid; overflow-y:auto; }
-  .utility .cutaway-device { flex:auto; min-height:38px; }
-  .cutaway-device { min-height:38px; grid-template-columns:29px minmax(0,1fr) auto; padding:5px 7px; }
-  .cutaway-device > span { width:27px; height:27px; font-size:.78rem; }
-  .cutaway-device b { font-size:.64rem; }
-  .cutaway-device strong { font-size:.58rem; }
   .scene-legend em { display: none; }
   .weather-pill, .scene-tooltip { display: none; }
   .run-card { position: relative; left: auto; top: auto; width: auto; margin: 10px 12px 12px; padding: 11px; }

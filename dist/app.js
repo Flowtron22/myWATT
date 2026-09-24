@@ -97,7 +97,6 @@ let runApplianceKwh = {};
 let runComplete = false;
 let lastFrame = performance.now();
 let lastRankingRender = 0;
-let visualMode = '3d';
 
 const $ = (selector) => document.querySelector(selector);
 const grid = $('#applianceGrid');
@@ -313,7 +312,6 @@ function renderAppliances() {
     </article>`;
   }).join('');
   renderCatalog();
-  renderCutaway();
 }
 
 function renderCatalog() {
@@ -639,78 +637,6 @@ document.querySelectorAll('[data-speed]').forEach(button => button.addEventListe
   });
 }));
 
-const cutawayRoomKeys = ['bedroom','bath','living','kitchen','utility'];
-function cutawayRoomFor(appliance) {
-  if (appliance.room === 'Bedroom') return 'bedroom';
-  if (appliance.room === 'Bathroom' || appliance.room === 'Yard') return 'bath';
-  if (appliance.room === 'Living' || appliance.room === 'Study') return 'living';
-  if (appliance.room === 'Kitchen') return 'kitchen';
-  return 'utility';
-}
-function cutawayStatus(appliance) {
-  if (!appliance.on) return 'Off';
-  if (!isActiveAtTime(appliance)) return 'Waiting';
-  const kw = wattsFor(appliance) * appliance.qty * operatingFactor(appliance) / 1000;
-  return `${kw.toFixed(kw < 1 ? 2 : 1)} kW`;
-}
-function renderCutaway() {
-  const house = $('#cutawayHouse');
-  if (!house) return;
-  cutawayRoomKeys.forEach(key => {
-    const room = house.querySelector(`[data-cutaway-room="${key}"]`);
-    const items = appliances.filter(appliance => appliance.included !== false && cutawayRoomFor(appliance) === key);
-    room.classList.toggle('empty', items.length === 0);
-    room.querySelector('.cutaway-appliances').innerHTML = items.map(appliance => `
-      <button class="cutaway-device ${appliance.on ? 'enabled' : ''}" type="button" data-cutaway-device="${appliance.id}" aria-label="View ${escapeHtml(appliance.name)} settings">
-        <span aria-hidden="true">${appliance.icon}</span>
-        <b>${escapeHtml(appliance.name.replace(/ \d+$/, ''))}${appliance.qty > 1 ? ` ×${appliance.qty}` : ''}</b>
-        <strong>${cutawayStatus(appliance)}</strong>
-      </button>`).join('');
-  });
-  updateCutawayState();
-}
-function updateCutawayState() {
-  const house = $('#cutawayHouse');
-  if (!house) return;
-  cutawayRoomKeys.forEach(key => {
-    const room = house.querySelector(`[data-cutaway-room="${key}"]`);
-    const roomAppliances = appliances.filter(appliance => appliance.included !== false && cutawayRoomFor(appliance) === key);
-    room.classList.toggle('has-power', roomAppliances.some(isActiveAtTime));
-  });
-  house.querySelectorAll('[data-cutaway-device]').forEach(device => {
-    const appliance = appliances.find(item => item.id === device.dataset.cutawayDevice);
-    if (!appliance) return;
-    const active = isActiveAtTime(appliance);
-    device.classList.toggle('active', active);
-    device.classList.toggle('enabled', appliance.on);
-    device.querySelector('strong').textContent = cutawayStatus(appliance);
-  });
-}
-function setVisualMode(mode) {
-  visualMode = mode === 'cutaway' ? 'cutaway' : '3d';
-  const cutaway = visualMode === 'cutaway';
-  $('#cutawayHouse').hidden = !cutaway;
-  canvas.hidden = cutaway;
-  $('#sceneWrap').classList.toggle('cutaway-mode', cutaway);
-  document.querySelectorAll('[data-visual-mode]').forEach(button => {
-    const active = button.dataset.visualMode === visualMode;
-    button.classList.toggle('active', active);
-    button.setAttribute('aria-pressed', String(active));
-  });
-  if (cutaway) updateCutawayState();
-  else { resize(); scheduleFrame(); }
-}
-document.querySelectorAll('[data-visual-mode]').forEach(button => button.addEventListener('click', () => setVisualMode(button.dataset.visualMode)));
-$('#cutawayHouse').addEventListener('click', event => {
-  const device = event.target.closest('[data-cutaway-device]');
-  if (!device) return;
-  const card = grid.querySelector(`[data-card="${CSS.escape(device.dataset.cutawayDevice)}"]`);
-  if (!card) return;
-  card.scrollIntoView({ behavior:'smooth', block:'center' });
-  card.classList.remove('focus-pulse');
-  requestAnimationFrame(() => card.classList.add('focus-pulse'));
-});
-
 // Three.js flat-isometric house
 const canvas = $('#houseCanvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -812,7 +738,6 @@ function updateSceneState() {
   pcMonitor2.material.emissiveIntensity = isActiveAtTime(pcSetup) ? .5 : .08;
   roomLights.forEach(light => light.intensity = lightsOn && (simMinute/60 > 17 || simMinute/60 < 6) ? 8 : 0);
   updateLiveLoad();
-  updateCutawayState();
 }
 function updateSky() {
   const hour = simMinute/60;
@@ -821,7 +746,6 @@ function updateSky() {
   renderer.setClearColor(bg,1); scene.fog.color.copy(bg);
   sun.intensity = .8 + daylight*3.8; stars.material.opacity = 1-daylight;
   roomLights.forEach(light => light.intensity = appliances.some(a=>(a.templateId || a.id)==='lights' && isActiveAtTime(a)) && daylight < .25 ? 8 : 0);
-  $('#cutawayHouse').classList.toggle('night', daylight < .2);
 }
 
 const pointer = new THREE.Vector2(), raycaster = new THREE.Raycaster();
@@ -926,4 +850,4 @@ function registerWebMcp() {
   try { void Promise.resolve(context.registerTool(tool)).catch(()=>{}); } catch {}
 }
 
-renderAppliances(); updateAfaLabel(); updateTariffStatus(); updateBill(); setTime(simMinute); updateSimulationPanel(); setVisualMode('3d'); registerWebMcp(); resize(); scheduleFrame();
+renderAppliances(); updateAfaLabel(); updateTariffStatus(); updateBill(); setTime(simMinute); updateSimulationPanel(); registerWebMcp(); resize(); scheduleFrame();

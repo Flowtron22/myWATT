@@ -4,14 +4,6 @@ Last updated: 24 September 2026
 
 Repository: https://github.com/Flowtron22/myWATT
 
-## Experimental cutaway house
-
-- Keep the existing 3D house as the default and add an optional Cutaway β visual mode.
-- Place every installed appliance into Bedroom, Bathroom/Laundry, Living/Study, Kitchen, or Whole house/Outside zones.
-- Highlight appliances and room power lines only while they are running at the current simulated time, with their live kW shown in place.
-- Open the existing appliance configuration card when a cutaway device is selected instead of duplicating controls.
-- Show one spacious room at a time in a horizontally scrollable phone carousel to avoid a cramped full-house view.
-
 ## Rolling energy meter
 
 - Add a mechanical-style kWh meter to the live billing run without extra branding or explanatory text.
