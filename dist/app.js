@@ -503,6 +503,17 @@ catalogGroups.addEventListener('click', event => {
 });
 $('#mobileBillBar').addEventListener('click', () => $('#billPanel').scrollIntoView({ behavior:'smooth', block:'start' }));
 
+const estimateNoticeKey = 'mywatt-estimate-notice-v1';
+const estimateNotice = $('#estimateNotice');
+function rememberEstimateNotice() {
+  try { localStorage.setItem(estimateNoticeKey, 'seen'); } catch {}
+}
+$('#startPlanning').addEventListener('click', () => { rememberEstimateNotice(); estimateNotice.close(); });
+estimateNotice.addEventListener('cancel', rememberEstimateNotice);
+try {
+  if (localStorage.getItem(estimateNoticeKey) !== 'seen') estimateNotice.showModal();
+} catch { estimateNotice.showModal(); }
+
 const presets = {
   careful: { aircon:[5,1], heater:[.35,1], fan:[7,1], lights:[4,7], tv:[2.5,1], pc:[2,1] },
   wfh: { aircon:[9,1], heater:[.6,1], fan:[10,2], lights:[6,9], tv:[4,1], pc:[9,1] },

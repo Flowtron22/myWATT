@@ -132,6 +132,7 @@
 
         <div class="bill-amount"><span>RM</span><strong id="billTotal">0.00</strong></div>
         <div class="bill-delta" id="billDelta">Make a change to compare</div>
+        <p class="estimate-disclaimer">Simulation estimate · not measured usage or an official bill</p>
 
         <div class="meter-block">
           <div class="meter-labels"><span><b id="kwhTotal">0</b> kWh / month</span><span id="thresholdText">800 kWh protection</span></div>
@@ -211,6 +212,12 @@
     <span><small>Plan</small><b id="mobilePlanName">General</b></span>
     <i aria-hidden="true">↑</i>
   </button>
+  <dialog class="estimate-notice" id="estimateNotice" aria-labelledby="estimateNoticeTitle">
+    <p class="eyebrow">BEFORE YOU START</p>
+    <h2 id="estimateNoticeTitle">This is a planning simulation</h2>
+    <p>myWATT??? estimates energy use and bills from the details you enter. It does not measure your home or reproduce its exact real-world usage pattern, and it is not an official TNB bill.</p>
+    <button id="startPlanning" type="button">Start planning</button>
+  </dialog>
   <dialog class="appliance-dialog" id="applianceDialog" aria-labelledby="applianceDialogTitle">
     <div class="dialog-heading">
       <div><p class="eyebrow">APPLIANCE CATALOGUE</p><h2 id="applianceDialogTitle">Add something to your home</h2></div>

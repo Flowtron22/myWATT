@@ -36,6 +36,8 @@ myWATT??? is an educational household electricity planning sandbox by Ureka Game
 
 - The header uses a circular crop of the myWATT OG artwork as its brand mark.
 - The simulation scene reserves enough height for the complete live-billing card and its controls.
+- First-time visitors see a concise notice that myWATT??? is an estimate-based planning simulation, not measured real-world usage or an official bill.
+- The estimated total keeps a compact simulation disclaimer visible after the welcome notice is dismissed.
 - Refresh the interface and animated house with the myWATT??? royal-blue, warm-yellow, and cream visual theme.
 
 ## Mobile household builder
