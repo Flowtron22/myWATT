@@ -63,6 +63,29 @@
           <canvas id="houseCanvas" aria-label="Interactive isometric house. Select an appliance to switch it on or off."></canvas>
           <div class="scene-tooltip" id="sceneTooltip" role="status" aria-live="polite"></div>
           <div class="scene-legend"><span></span><b id="liveLoad">0.00 kW</b><em id="activeCount">0 appliances running</em></div>
+          <div class="visual-mode-switch" role="group" aria-label="House visual mode">
+            <button class="active" type="button" data-visual-mode="3d" aria-pressed="true">3D</button>
+            <button type="button" data-visual-mode="cutaway" aria-pressed="false">Cutaway <sup>β</sup></button>
+          </div>
+          <div class="cutaway-house" id="cutawayHouse" aria-label="Experimental cutaway view of appliances by room" hidden>
+            <div class="cutaway-grid">
+              <section class="cutaway-room bedroom" data-cutaway-room="bedroom">
+                <h3>Bedroom</h3><span class="room-furniture" aria-hidden="true"></span><div class="cutaway-appliances"></div>
+              </section>
+              <section class="cutaway-room bath" data-cutaway-room="bath">
+                <h3>Bathroom / Laundry</h3><span class="room-furniture" aria-hidden="true"></span><div class="cutaway-appliances"></div>
+              </section>
+              <section class="cutaway-room living" data-cutaway-room="living">
+                <h3>Living / Study</h3><span class="room-furniture" aria-hidden="true"></span><div class="cutaway-appliances"></div>
+              </section>
+              <section class="cutaway-room kitchen" data-cutaway-room="kitchen">
+                <h3>Kitchen</h3><span class="room-furniture" aria-hidden="true"></span><div class="cutaway-appliances"></div>
+              </section>
+              <section class="cutaway-room utility" data-cutaway-room="utility">
+                <h3>Whole house / Outside</h3><span class="room-furniture" aria-hidden="true"></span><div class="cutaway-appliances"></div>
+              </section>
+            </div>
+          </div>
           <section class="run-card" aria-labelledby="runTitle">
             <div class="run-heading">
               <div><p class="eyebrow">LIVE BILLING RUN</p><h2 id="runTitle">Day <b id="runDay">0</b> of <b id="runTarget">30</b></h2></div>
