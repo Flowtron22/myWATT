@@ -256,12 +256,13 @@ footer { margin-top: 22px; }
 footer div { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 9px; }
 footer a { color: #075bc8; font-size: .67rem; font-weight: 800; }
 .appliance-dialog { width: min(680px, calc(100vw - 28px)); max-height: min(720px, calc(100vh - 36px)); margin: auto; padding: 0; overflow: hidden; border: 1px solid rgba(98,201,255,.58); border-radius: 21px; color: var(--cream); background: #052a75; box-shadow: 0 28px 90px rgba(0,13,57,.65); }
+.appliance-dialog[open] { display: flex; flex-direction: column; }
 .appliance-dialog::backdrop { background: rgba(1,10,40,.76); backdrop-filter: blur(5px); }
-.dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 19px 12px; border-bottom: 1px solid var(--line); }
+.dialog-heading { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 19px 12px; border-bottom: 1px solid var(--line); }
 .dialog-heading h2 { font-size: 1.15rem; }
 .dialog-heading button { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; color: var(--cream); background: transparent; cursor: pointer; font-size: 1.25rem; }
-.dialog-intro { margin: 0; padding: 12px 19px 0; color: var(--muted); font-size: .74rem; line-height: 1.45; }
-.catalog-groups { max-height: calc(100vh - 180px); overflow: auto; padding: 14px 19px 20px; }
+.dialog-intro { flex: 0 0 auto; margin: 0; padding: 12px 19px 0; color: var(--muted); font-size: .74rem; line-height: 1.45; }
+.catalog-groups { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 19px 20px; }
 .catalog-group + .catalog-group { margin-top: 16px; }
 .catalog-group h3 { margin: 0 0 7px; color: var(--mint); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; }
 .catalog-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }

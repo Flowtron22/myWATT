@@ -10,6 +10,7 @@ Repository: https://github.com/Flowtron22/myWATT
 - Roll eight digits smoothly as simulated household energy accumulates, including two decimal places for visible low-usage movement.
 - Keep the meter synchronized with the existing energy and bill calculation through pause, reset, speed changes, and run completion.
 - Scale the digit display for compact phone screens without reducing leaderboard space.
+- Keep the appliance catalogue header fixed while its full list scrolls independently, including on short desktop windows and phones.
 
 ## Live appliance energy ranking
 
