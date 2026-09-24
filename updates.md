@@ -34,7 +34,7 @@ Repository: https://github.com/Flowtron22/myWATT
 
 myWATT??? is an educational household electricity planning sandbox by Ureka Games for Peninsular Malaysia. It estimates monthly energy use and the current charge using the RP4 domestic tariff model, September 2026 AFA input, and applicable protection rules.
 
-- The header uses a circular crop of the myWATT OG artwork as its brand mark.
+- The header uses the dedicated circular myWATT artwork as its brand mark.
 - The simulation scene reserves enough height for the complete live-billing card and its controls.
 - First-time visitors see a concise notice that myWATT??? is an estimate-based planning simulation, not measured real-world usage or an official bill.
 - The estimated total keeps a compact simulation disclaimer visible after the welcome notice is dismissed.

@@ -28,7 +28,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .brand-name { font-size: .92rem; letter-spacing: .06em; }
 .brand-name > span { color: var(--yellow); }
 .brand-copy small { color: var(--muted); font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: lowercase; }
-.brand-mark { width: 31px; height: 31px; flex: 0 0 31px; border: 2px solid var(--yellow); border-radius: 50%; background-color: var(--yellow); background-image: url('./og.png'); background-position: 50% 41%; background-repeat: no-repeat; background-size: 220%; box-shadow: 0 0 0 1px rgba(255,255,255,.14); overflow: hidden; }
+.brand-mark { width: 31px; height: 31px; flex: 0 0 31px; border: 2px solid var(--yellow); border-radius: 50%; background-color: var(--yellow); background-image: url('./myWATT_logo.webp'); background-position: center; background-repeat: no-repeat; background-size: 128%; box-shadow: 0 0 0 1px rgba(255,255,255,.14); overflow: hidden; }
 .tariff-stamp { color: #e5f2ff; font-size: .78rem; display: flex; align-items: center; gap: 8px; }
 .tariff-stamp.expired { color: #ffd6c5; }
 .tariff-stamp.expired .pulse-dot { background: var(--orange); box-shadow: 0 0 0 6px rgba(255,122,61,.12); }
