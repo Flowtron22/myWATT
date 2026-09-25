@@ -37,6 +37,7 @@ myWATT??? is an educational household electricity planning sandbox by Ureka Game
 - The header uses the dedicated circular myWATT artwork as its brand mark.
 - The simulation scene reserves enough height for the complete live-billing card and its controls.
 - Replace the decorative Three.js house with a lightweight day-and-night sky driven by the simulation clock, and center the live meter as the primary visual.
+- Let users share or download a focused PNG of the completed meter card, without adding the wider household configuration or bill panel.
 - First-time visitors see a concise notice that myWATT??? estimates and simulates energy use and is not an official TNB bill.
 - The estimated total keeps a compact simulation disclaimer visible after the welcome notice is dismissed.
 - Keep the simulation interface within the myWATT??? royal-blue, warm-yellow, and cream visual theme.

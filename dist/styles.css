@@ -101,8 +101,11 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer;
 .occupancy-control em { color: var(--yellow); font-style: normal; }
 .run-card input { margin: 4px 0 2px; }
 .run-card > p { margin: 2px 0 9px; color: #c8defe; font-size: .75rem; line-height: 1.35; }
-.run-card > button { width: 100%; padding: 6px; border: 1px solid var(--line); border-radius: 8px; color: var(--cream); background: transparent; font-size: .75rem; cursor: pointer; }
-.run-card > button:hover { border-color: var(--yellow); color: var(--yellow); }
+.run-actions { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.run-actions button { width: 100%; padding: 6px; border: 1px solid var(--line); border-radius: 8px; color: var(--cream); background: transparent; font-size: .75rem; cursor: pointer; }
+.run-actions button:hover { border-color: var(--yellow); color: var(--yellow); }
+.run-actions .share-result { border-color: var(--yellow); color: var(--ink); background: var(--yellow); font-weight: 900; }
+.run-actions .share-result:hover { color: var(--ink); filter: brightness(1.05); }
 .play-button:disabled { opacity: .55; cursor: not-allowed; }
 .weather-pill { right: 17px; display: flex; gap: 9px; align-items: center; }
 .weather-pill b { color: var(--yellow); }

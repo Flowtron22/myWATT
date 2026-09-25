@@ -192,6 +192,7 @@ function updateSimulationPanel() {
   const runningSplit = runComplete ? null : { peakKwh:runPeakKwh, offpeakKwh:runOffpeakKwh };
   $('#runBill').textContent = currency(calculateBill(shownKwh, touEnabled, runningSplit).total);
   $('#runState').textContent = daysAtHome === 0 ? 'HOLIDAY' : runComplete ? 'COMPLETE' : playing ? 'RUNNING' : 'READY';
+  $('#shareResult').hidden = !runComplete || daysAtHome === 0;
   $('#homeDaysValue').textContent = daysAtHome;
   $('#holidayNote').textContent = holidayDays ? `${holidayDays} holiday day${holidayDays === 1 ? '' : 's'}: fridge, freezer, water purifier, router and background loads continue if left on.` : 'No holiday days in this billing month.';
   renderEnergyRanking(runComplete || !playing);
@@ -634,6 +635,179 @@ $('#playButton').addEventListener('click', () => {
   updateSimulationPanel();
 });
 $('#runReset').addEventListener('click', () => resetSimulation());
+
+function roundedPath(context, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.arcTo(x + width, y, x + width, y + height, r);
+  context.arcTo(x + width, y + height, x, y + height, r);
+  context.arcTo(x, y + height, x, y, r);
+  context.arcTo(x, y, x + width, y, r);
+  context.closePath();
+}
+function fittedCanvasText(context, text, maxWidth) {
+  if (context.measureText(text).width <= maxWidth) return text;
+  let clipped = text;
+  while (clipped.length && context.measureText(`${clipped}…`).width > maxWidth) clipped = clipped.slice(0, -1);
+  return `${clipped}…`;
+}
+function createMeterResultCanvas() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 900;
+  canvas.height = 1080;
+  const context = canvas.getContext('2d');
+  const totalKwh = monthlyKwh();
+  const bill = calculateBill(totalKwh);
+  const entries = appliances
+    .filter(appliance => appliance.included !== false && appliance.on)
+    .map((appliance, index) => ({ appliance, index, kwh:applianceEnergyForDays(appliance) }))
+    .sort((left, right) => right.kwh - left.kwh || left.index - right.index);
+  const rankedKwh = entries.reduce((sum, entry) => sum + entry.kwh, 0);
+  const leaders = entries.slice(0, 5);
+  const leaderKwh = leaders[0]?.kwh || 0;
+
+  const backdrop = context.createLinearGradient(0, 0, 0, canvas.height);
+  backdrop.addColorStop(0, '#073d9f');
+  backdrop.addColorStop(1, '#031b56');
+  context.fillStyle = backdrop;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  roundedPath(context, 28, 28, 844, 1024, 32);
+  context.strokeStyle = '#ffd62e';
+  context.lineWidth = 3;
+  context.stroke();
+
+  context.fillStyle = '#62c9ff';
+  context.font = '800 22px Arial, sans-serif';
+  context.fillText('LIVE BILLING RUN', 68, 84);
+  context.fillStyle = '#fffdf6';
+  context.font = '900 38px Arial, sans-serif';
+  context.fillText(`Day ${daysAtHome} of ${daysAtHome}`, 68, 132);
+  roundedPath(context, 674, 68, 150, 52, 26);
+  context.fillStyle = '#0b3476';
+  context.fill();
+  context.strokeStyle = '#62c9ff';
+  context.lineWidth = 2;
+  context.stroke();
+  context.fillStyle = '#fffdf6';
+  context.font = '900 20px Arial, sans-serif';
+  context.textAlign = 'center';
+  context.fillText('COMPLETE', 749, 101);
+  context.textAlign = 'left';
+
+  roundedPath(context, 68, 164, 756, 164, 24);
+  const meterGradient = context.createLinearGradient(0, 164, 0, 328);
+  meterGradient.addColorStop(0, '#e6ebf1');
+  meterGradient.addColorStop(1, '#aab7c8');
+  context.fillStyle = meterGradient;
+  context.fill();
+  context.strokeStyle = '#7285a1';
+  context.lineWidth = 2;
+  context.stroke();
+
+  const formatted = Math.min(999999.99, Math.max(0, totalKwh)).toFixed(2).padStart(9, '0');
+  const boxWidth = 66, boxHeight = 78, gap = 8, decimalWidth = 24;
+  const totalMeterWidth = formatted.split('').reduce((sum, character) => sum + (character === '.' ? decimalWidth : boxWidth), 0) + gap * (formatted.length - 1);
+  let meterX = (canvas.width - totalMeterWidth) / 2;
+  formatted.split('').forEach(character => {
+    if (character === '.') {
+      context.fillStyle = '#0a285b';
+      context.font = '900 38px Arial, sans-serif';
+      context.textAlign = 'center';
+      context.fillText('.', meterX + decimalWidth / 2, 263);
+      meterX += decimalWidth + gap;
+      return;
+    }
+    roundedPath(context, meterX, 196, boxWidth, boxHeight, 6);
+    const digitGradient = context.createLinearGradient(0, 196, 0, 274);
+    digitGradient.addColorStop(0, '#041b4b');
+    digitGradient.addColorStop(.48, '#0b3476');
+    digitGradient.addColorStop(.52, '#061f55');
+    digitGradient.addColorStop(1, '#03183f');
+    context.fillStyle = digitGradient;
+    context.fill();
+    context.strokeStyle = '#25477c';
+    context.stroke();
+    context.fillStyle = '#f6f8fb';
+    context.font = '900 48px Consolas, monospace';
+    context.textAlign = 'center';
+    context.fillText(character, meterX + boxWidth / 2, 252);
+    meterX += boxWidth + gap;
+  });
+  context.fillStyle = '#12366d';
+  context.font = '900 18px Arial, sans-serif';
+  context.textAlign = 'center';
+  context.fillText('kWh', canvas.width / 2, 307);
+  context.textAlign = 'left';
+
+  [[68, 'Energy so far', `${totalKwh.toFixed(1)} kWh`], [454, 'Estimated bill', `RM ${bill.total.toFixed(2)}`]].forEach(([x, label, value]) => {
+    roundedPath(context, x, 354, 370, 112, 18);
+    context.fillStyle = 'rgba(255,255,255,.07)';
+    context.fill();
+    context.fillStyle = '#b9d5ff';
+    context.font = '700 20px Arial, sans-serif';
+    context.fillText(label, x + 22, 389);
+    context.fillStyle = '#fffdf6';
+    context.font = '900 30px Arial, sans-serif';
+    context.fillText(value, x + 22, 433);
+  });
+
+  leaders.forEach(({ appliance, kwh }, rank) => {
+    const y = 500 + rank * 94;
+    const usage = leaderKwh ? Math.max(.02, kwh / leaderKwh) : 0;
+    roundedPath(context, 68, y, 756, 76, 10);
+    context.fillStyle = 'rgba(1,13,49,.72)';
+    context.fill();
+    context.save();
+    roundedPath(context, 68, y, 756, 76, 10);
+    context.clip();
+    context.fillStyle = ['#ff625c','#53db8b','#62c9ff','#d4a900','#d4a900'][rank];
+    context.globalAlpha = .78;
+    context.fillRect(68, y, 756 * usage, 76);
+    context.restore();
+    context.fillStyle = '#ffffff';
+    context.font = '900 22px Arial, sans-serif';
+    context.fillText(fittedCanvasText(context, appliance.name, 430), 88, y + 45);
+    const share = bill.total * (rankedKwh ? kwh / rankedKwh : 0);
+    context.textAlign = 'right';
+    context.font = '900 20px Arial, sans-serif';
+    context.fillText(`${kwh.toFixed(kwh < 10 ? 2 : 1)} kWh`, 802, y + 31);
+    context.fillStyle = '#e7f2ff';
+    context.font = '700 15px Arial, sans-serif';
+    context.fillText(`RM ${share.toFixed(2)} share`, 802, y + 55);
+    context.textAlign = 'left';
+  });
+
+  context.fillStyle = '#ffd62e';
+  context.font = '900 28px Arial, sans-serif';
+  context.fillText('myWATT???', 68, 1010);
+  context.fillStyle = '#b9d5ff';
+  context.font = '700 16px Arial, sans-serif';
+  context.textAlign = 'right';
+  context.fillText('Planning simulation · not an official TNB bill', 824, 1008);
+  context.textAlign = 'left';
+  return canvas;
+}
+function downloadMeterResult(blob) {
+  const link = document.createElement('a');
+  link.download = `myWATT-meter-${daysAtHome}-days.png`;
+  link.href = URL.createObjectURL(blob);
+  document.body.append(link);
+  link.click();
+  setTimeout(() => { URL.revokeObjectURL(link.href); link.remove(); }, 1000);
+}
+$('#shareResult').addEventListener('click', async () => {
+  const canvas = createMeterResultCanvas();
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) return;
+  const file = new File([blob], `myWATT-meter-${daysAtHome}-days.png`, { type:'image/png' });
+  const shareData = { files:[file], title:'myWATT??? meter result', text:'My household energy simulation result from myWATT???' };
+  if (navigator.canShare?.({ files:[file] })) {
+    try { await navigator.share(shareData); return; }
+    catch (error) { if (error?.name === 'AbortError') return; }
+  }
+  downloadMeterResult(blob);
+});
 $('#homeDays').addEventListener('input', (event) => {
   daysAtHome = Number(event.target.value);
   resetSimulation();

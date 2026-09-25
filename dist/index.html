@@ -84,7 +84,10 @@
             <label class="occupancy-control" for="homeDays"><span class="sr-only">Days at home</span><b><em id="homeDaysValue">30</em> days</b></label>
             <input id="homeDays" type="range" min="0" max="30" step="1" value="30">
             <p id="holidayNote" class="sr-only">No holiday days in this billing month.</p>
-            <button id="runReset" type="button">Reset simulation</button>
+            <div class="run-actions">
+              <button id="runReset" type="button">Reset simulation</button>
+              <button id="shareResult" class="share-result" type="button" hidden>Share result PNG</button>
+            </div>
           </section>
           <div class="weather-pill"><b>32°C</b><span>Kuala Lumpur day</span></div>
         </div>
