@@ -16,6 +16,7 @@ Repository: https://github.com/Flowtron22/myWATT
 
 - Expand the completed simulation PNG into one landscape image containing the live meter, top-five appliance ranking, estimated monthly bill and full tariff breakdown.
 - Print `@ my-watt.vercel.app` into the shared image and include the clickable site URL in native share data where the receiving platform supports it.
+- Avoid duplicated links by keeping the URL separate from the normal share caption and adding it to caption text only for compatibility fallback.
 
 ## Rolling energy meter
 

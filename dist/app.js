@@ -976,12 +976,12 @@ $('#shareResult').addEventListener('click', async () => {
   const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
   if (!blob) return;
   const file = new File([blob], `myWATT-result-${daysAtHome}-days.png`, { type:'image/png' });
-  const shareData = { files:[file], title:'myWATT??? result', text:'My household energy simulation result from myWATT???\nhttps://my-watt.vercel.app/', url:'https://my-watt.vercel.app/' };
+  const shareData = { files:[file], title:'myWATT??? result', text:'My household energy simulation result from myWATT???', url:'https://my-watt.vercel.app/' };
   if (navigator.canShare?.({ files:[file] })) {
     try { await navigator.share(shareData); return; }
     catch (error) {
       if (error?.name === 'AbortError') return;
-      try { await navigator.share({ files:[file], title:shareData.title, text:shareData.text }); return; }
+      try { await navigator.share({ files:[file], title:shareData.title, text:`${shareData.text}\n${shareData.url}` }); return; }
       catch (retryError) { if (retryError?.name === 'AbortError') return; }
     }
   }
