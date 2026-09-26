@@ -1,8 +1,16 @@
 # myWATT??? updates
 
-Last updated: 24 September 2026
+Last updated: 26 September 2026
 
 Repository: https://github.com/Flowtron22/myWATT
+
+## Real-usage matching
+
+- Replace the old bill comparison fields with a guided "Match my real usage" card beside the estimated bill.
+- Accept either total kWh from an electricity bill or two accumulated meter readings from a smart RCCB, home monitor or utility meter.
+- Compare measured and simulated energy over the same number of days, show a capped match percentage, and let the user optionally apply the household adjustment.
+- Recalculate the full tariff from adjusted kWh instead of scaling the ringgit total, while keeping appliance estimates unchanged.
+- Save the optional adjustment with household scenarios and label adjusted results clearly as estimates.
 
 ## Rolling energy meter
 

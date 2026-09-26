@@ -226,10 +226,17 @@ input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer;
 .score-card h2 { font-size: 1rem; margin-bottom: 4px; }
 .score-card p:last-child { color: #5b6f92; font-size: .73rem; line-height: 1.45; margin: 0; }
 .calibration-card, .breakdown, .fuel-lab, .coach-card { margin-top: 20px; border-top: 1px solid #d0d8e3; padding-top: 19px; }
-.calibration-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin-top: 11px; }
-.calibration-inputs label span { color: #5b6f92; }
-.calibration-inputs input { width: 100%; border: 1px solid #cad6e5; border-radius: 9px; padding: 8px; color: var(--ink); background: rgba(255,255,255,.72); }
+.calibration-source { display: block; margin-top: 11px; }
+.calibration-source span, .calibration-fields label span { display: block; margin-bottom: 4px; color: #5b6f92; font-size: .75rem; }
+.calibration-source select, .calibration-fields input { width: 100%; border: 1px solid #cad6e5; border-radius: 9px; padding: 8px; color: var(--ink); background: rgba(255,255,255,.72); }
+.calibration-fields { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; margin-top: 8px; }
+.calibration-fields[hidden] { display: none; }
+#billCalibrationFields { grid-template-columns: 2fr 1fr; }
 .calibration-card > p { margin: 9px 0 0; color: #526888; font-size: .7rem; line-height: 1.4; }
+.calibration-actions { display: flex; gap: 7px; margin-top: 10px; }
+.calibration-actions button { border: 1px solid #0f62c9; border-radius: 9px; padding: 8px 11px; color: #fff; background: #0759c7; font-size: .72rem; font-weight: 800; }
+.calibration-actions button:disabled { cursor: not-allowed; opacity: .45; }
+.calibration-actions #clearCalibration { color: #16427d; background: transparent; }
 .section-title h2 { font-size: 1.02rem; }
 .section-title button { border: 0; background: transparent; color: #075bc8; text-decoration: underline; cursor: pointer; font-size: .72rem; }
 .formula-note { margin: 10px 0; padding: 10px; border-radius: 10px; background: #e7eef7; color: #465b7c; font-size: .72rem; line-height: 1.45; }
@@ -335,7 +342,7 @@ footer a { color: #075bc8; font-size: .67rem; font-weight: 800; }
   .scenario-planner { grid-template-columns: 1fr; }
   .scenario-controls { justify-content: flex-start; }
   .scenario-planner > p { grid-column: 1; }
-  .calibration-inputs { grid-template-columns: 1fr; }
+  .calibration-fields, #billCalibrationFields { grid-template-columns: 1fr; }
   .deck-tools { align-items: stretch; display: grid; }
   .add-appliance-button { width: 100%; }
   .catalog-list { grid-template-columns: 1fr; }

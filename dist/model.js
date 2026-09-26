@@ -72,6 +72,19 @@ export function monthlyKwh(appliances, state) {
   return appliances.reduce((sum, appliance) => sum + applianceEnergyForDays(appliance, state), 0);
 }
 
+export function calculateUsageCalibration({ measuredKwh, measuredDays, simulatedMonthlyKwh, daysPerMonth = 30 }) {
+  const actual = Number(measuredKwh);
+  const days = Number(measuredDays);
+  const simulatedMonth = Number(simulatedMonthlyKwh);
+  const monthDays = Number(daysPerMonth);
+  if (!(actual > 0) || !(days > 0) || !(simulatedMonth > 0) || !(monthDays > 0)) return null;
+  const simulatedForPeriod = simulatedMonth / monthDays * days;
+  const differenceKwh = actual - simulatedForPeriod;
+  const factor = actual / simulatedForPeriod;
+  const matchPercent = Math.max(0, Math.min(100, (1 - Math.abs(differenceKwh) / actual) * 100));
+  return { measuredKwh:actual, measuredDays:days, simulatedForPeriod, differenceKwh, factor, matchPercent };
+}
+
 export function overlapHours(start, duration, windowStart, windowEnd) {
   const normalizedStart = ((Number(start) || 0) % 24 + 24) % 24;
   const safeDuration = Math.min(24, Math.max(0, Number(duration) || 0));

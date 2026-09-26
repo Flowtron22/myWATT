@@ -1,6 +1,7 @@
 import {
   applianceEnergyForDays as modelApplianceEnergyForDays,
   calculateBill as modelCalculateBill,
+  calculateUsageCalibration,
   incentiveRate,
   integrateSimulationInterval,
   isActiveAtTime as modelIsActiveAtTime,
@@ -84,6 +85,9 @@ let appliances = structuredClone(defaults);
 let afaRate = defaultAfa;
 let touEnabled = false;
 let baselineBill = null;
+let calibrationFactor = 1;
+let calibrationApplied = false;
+let pendingCalibration = null;
 let simMinute = 420;
 let playing = false;
 let simSpeed = 1;
@@ -125,9 +129,12 @@ defaults.forEach(syncUsageHours);
 function applianceEnergyForDays(a, requestedDays = null, includeWhenOff = false) {
   return modelApplianceEnergyForDays(a, { daysAtHome, daysPerMonth }, requestedDays, includeWhenOff);
 }
-function monthlyKwh() { return modelMonthlyKwh(appliances, { daysAtHome, daysPerMonth }); }
+function rawMonthlyKwh() { return modelMonthlyKwh(appliances, { daysAtHome, daysPerMonth }); }
+function adjustedKwh(kwh) { return Math.max(0, kwh * calibrationFactor); }
+function monthlyKwh() { return adjustedKwh(rawMonthlyKwh()); }
 function touEnergySplit(kwhOverride = null) {
-  return modelTouEnergySplit(appliances, { daysAtHome, daysPerMonth, representativeWeekdays }, kwhOverride);
+  const requestedKwh = kwhOverride === null ? monthlyKwh() : kwhOverride;
+  return modelTouEnergySplit(appliances, { daysAtHome, daysPerMonth, representativeWeekdays }, requestedKwh);
 }
 function calculateBill(kwh = monthlyKwh(), useTou = touEnabled, splitOverride = null) {
   const split = splitOverride || touEnergySplit(kwh);
@@ -166,7 +173,9 @@ function renderEnergyRanking(force = false) {
     .sort((left, right) => right.kwh - left.kwh || left.index - right.index);
   const leaderKwh = entries[0]?.kwh || 0;
   const rankedKwh = entries.reduce((sum, entry) => sum + entry.kwh, 0);
-  const runningBill = calculateBill(runComplete ? monthlyKwh() : runKwh, touEnabled, runComplete ? null : { peakKwh:runPeakKwh, offpeakKwh:runOffpeakKwh });
+  const rankedRunKwh = adjustedKwh(runKwh);
+  const runningSplit = { peakKwh:adjustedKwh(runPeakKwh), offpeakKwh:adjustedKwh(runOffpeakKwh) };
+  const runningBill = calculateBill(runComplete ? monthlyKwh() : rankedRunKwh, touEnabled, runComplete ? null : runningSplit);
   $('#rankingCaption').textContent = runComplete ? 'Final breakdown' : playing ? 'Updating live' : runKwh > 0 ? 'Paused' : 'Ready to measure';
   $('#energyRanking').innerHTML = entries.length ? entries.map(({ appliance, kwh }, rank) => {
     const billShare = runningBill.total * (rankedKwh ? kwh / rankedKwh : 0);
@@ -182,14 +191,14 @@ function renderEnergyRanking(force = false) {
 }
 function updateSimulationPanel() {
   const holidayDays = daysPerMonth - daysAtHome;
-  const shownKwh = runComplete ? monthlyKwh() : runKwh;
+  const shownKwh = runComplete ? monthlyKwh() : adjustedKwh(runKwh);
   const progress = runComplete ? 1 : (simDay ? Math.min(1, ((simDay - 1) + simMinute / 1440) / daysAtHome) : 0);
   $('#runDay').textContent = runComplete ? daysAtHome : simDay;
   $('#runTarget').textContent = daysAtHome;
   $('#runProgress').style.width = `${progress * 100}%`;
   $('#runKwh').textContent = `${shownKwh.toFixed(1)} kWh`;
   updateUsageMeter(shownKwh);
-  const runningSplit = runComplete ? null : { peakKwh:runPeakKwh, offpeakKwh:runOffpeakKwh };
+  const runningSplit = runComplete ? null : { peakKwh:adjustedKwh(runPeakKwh), offpeakKwh:adjustedKwh(runOffpeakKwh) };
   $('#runBill').textContent = currency(calculateBill(shownKwh, touEnabled, runningSplit).total);
   $('#runState').textContent = daysAtHome === 0 ? 'HOLIDAY' : runComplete ? 'COMPLETE' : playing ? 'RUNNING' : 'READY';
   $('#shareResult').hidden = !runComplete || daysAtHome === 0;
@@ -348,6 +357,7 @@ function updateBill(announce = false) {
   $('#mobileKwhTotal').textContent = `${Math.round(b.kwh).toLocaleString()} kWh`;
   $('#mobilePlanName').textContent = b.useTou ? 'ToU' : 'General';
   $('#billPlanName').textContent = b.useTou ? 'Domestic ToU · RP4' : 'Domestic General · RP4';
+  $('#estimateDisclaimer').textContent = calibrationApplied ? 'Meter-adjusted simulation estimate · not an official bill' : 'Simulation estimate · not measured usage or an official bill';
   $('#kwhTotal').textContent = Math.round(b.kwh).toLocaleString();
   $('#meterFill').style.width = `${Math.min(100, b.kwh / 1200 * 100)}%`;
   const badge = $('#protectionBadge');
@@ -555,7 +565,7 @@ $('#scenarioSave').addEventListener('click', () => {
   const name = $('#scenarioName').value.trim() || `Scenario ${readScenarios().length + 1}`;
   const bill = calculateBill();
   const scenarios = readScenarios();
-  const saved = { id:`scenario-${Date.now()}`, name, appliances:structuredClone(appliances), afaRate, touEnabled, daysAtHome, kwh:bill.kwh, bill:bill.total };
+  const saved = { id:`scenario-${Date.now()}`, name, appliances:structuredClone(appliances), afaRate, touEnabled, daysAtHome, calibrationFactor, calibrationApplied, kwh:bill.kwh, bill:bill.total };
   scenarios.push(saved); writeScenarios(scenarios); $('#scenarioName').value = ''; refreshScenarioSelect(saved.id);
 });
 $('#scenarioSelect').addEventListener('change', () => refreshScenarioSelect($('#scenarioSelect').value));
@@ -574,6 +584,9 @@ $('#scenarioLoad').addEventListener('click', () => {
   afaRate = Number.isFinite(saved.afaRate) ? Math.min(10, Math.max(-10, saved.afaRate)) : defaultAfa;
   touEnabled = Boolean(saved.touEnabled);
   daysAtHome = Number.isFinite(saved.daysAtHome) ? Math.min(daysPerMonth, Math.max(0, saved.daysAtHome)) : daysPerMonth;
+  calibrationApplied = Boolean(saved.calibrationApplied && Number.isFinite(saved.calibrationFactor) && saved.calibrationFactor > 0);
+  calibrationFactor = calibrationApplied ? saved.calibrationFactor : 1;
+  $('#clearCalibration').hidden = !calibrationApplied;
   $('#homeDays').value = daysAtHome; $('#afaSlider').value = afaRate; resetSimulation(); renderAppliances(); updateAfaLabel(); updateBill(true);
 });
 $('#scenarioDelete').addEventListener('click', () => {
@@ -581,29 +594,65 @@ $('#scenarioDelete').addEventListener('click', () => {
   writeScenarios(readScenarios().filter(s => s.id !== id)); refreshScenarioSelect();
 });
 
-function updateCalibration(currentBill = calculateBill()) {
-  const actualKwh = Number($('#actualKwh')?.value);
-  const actualBill = Number($('#actualBill')?.value);
-  const actualDays = Math.max(1, Number($('#actualDays')?.value) || 30);
+function updateCalibration() {
   const output = $('#calibrationResult'); if (!output) return;
-  if (!(actualKwh > 0) && !(actualBill > 0)) { output.textContent = 'Enter a real bill to see how closely your configured home matches it.'; return; }
-  const normalizedKwh = actualKwh > 0 ? actualKwh / actualDays * 30 : null;
-  const parts = [];
-  if (normalizedKwh) {
-    const explained = currentBill.kwh / normalizedKwh * 100;
-    parts.push(`Your setup explains about ${Math.round(explained)}% of the bill's ${normalizedKwh.toFixed(0)} kWh 30-day equivalent`);
+  const meterMode = $('#calibrationMode').value === 'meter';
+  $('#billCalibrationFields').hidden = meterMode;
+  $('#meterCalibrationFields').hidden = !meterMode;
+  let measuredKwh;
+  let measuredDays;
+  if (meterMode) {
+    const previous = Number($('#previousMeterKwh').value);
+    const current = Number($('#currentMeterKwh').value);
+    measuredDays = Number($('#meterReadingDays').value);
+    if (!(current > previous) || !(measuredDays > 0)) {
+      pendingCalibration = null;
+      output.textContent = previous > 0 && current > 0 && current <= previous ? 'Current reading must be higher than the previous reading.' : 'Enter two meter readings and the days between them.';
+      $('#applyCalibration').disabled = true;
+      return;
+    }
+    measuredKwh = current - previous;
+  } else {
+    measuredKwh = Number($('#billUsageKwh').value);
+    measuredDays = Number($('#billUsageDays').value);
+    if (!(measuredKwh > 0) || !(measuredDays > 0)) {
+      pendingCalibration = null;
+      output.textContent = 'Enter the kWh and billing days shown on your bill.';
+      $('#applyCalibration').disabled = true;
+      return;
+    }
   }
-  if (actualBill > 0) {
-    const normalizedBill = actualBill / actualDays * 30;
-    const difference = currentBill.total - normalizedBill;
-    parts.push(`the estimate is ${difference >= 0 ? 'RM ' + difference.toFixed(2) + ' higher' : 'RM ' + Math.abs(difference).toFixed(2) + ' lower'} than the 30-day bill equivalent`);
+  pendingCalibration = calculateUsageCalibration({ measuredKwh, measuredDays, simulatedMonthlyKwh:rawMonthlyKwh(), daysPerMonth });
+  if (!pendingCalibration) {
+    output.textContent = 'Add at least one appliance before matching real usage.';
+    $('#applyCalibration').disabled = true;
+    return;
   }
-  output.textContent = `${parts.join('; ')}.`;
+  const direction = pendingCalibration.differenceKwh >= 0 ? 'more' : 'less';
+  const percentDifference = Math.abs((pendingCalibration.factor - 1) * 100);
+  output.textContent = `You used ${pendingCalibration.measuredKwh.toFixed(1)} kWh. myWATT estimated ${pendingCalibration.simulatedForPeriod.toFixed(1)} kWh — a ${pendingCalibration.matchPercent.toFixed(0)}% match. Your home used ${percentDifference.toFixed(0)}% ${direction}.`;
+  $('#applyCalibration').disabled = false;
 }
-['actualKwh','actualBill','actualDays'].forEach(id => $(`#${id}`).addEventListener('input', () => updateCalibration(calculateBill())));
+$('#calibrationMode').addEventListener('change', updateCalibration);
+['billUsageKwh','billUsageDays','previousMeterKwh','currentMeterKwh','meterReadingDays'].forEach(id => $(`#${id}`).addEventListener('input', updateCalibration));
+$('#applyCalibration').addEventListener('click', () => {
+  if (!pendingCalibration) return;
+  calibrationFactor = pendingCalibration.factor;
+  calibrationApplied = true;
+  $('#clearCalibration').hidden = false;
+  updateBill(true);
+  updateSimulationPanel();
+});
+$('#clearCalibration').addEventListener('click', () => {
+  calibrationFactor = 1;
+  calibrationApplied = false;
+  $('#clearCalibration').hidden = true;
+  updateBill(true);
+  updateSimulationPanel();
+});
 refreshScenarioSelect();
 
-$('#resetButton').addEventListener('click', () => { appliances = structuredClone(defaults); afaRate = defaultAfa; touEnabled = false; daysAtHome = 30; $('#homeDays').value = daysAtHome; $('#afaSlider').value = defaultAfa; baselineBill = null; resetSimulation(); renderAppliances(); updateAfaLabel(); updateBill(true); });
+$('#resetButton').addEventListener('click', () => { appliances = structuredClone(defaults); afaRate = defaultAfa; touEnabled = false; daysAtHome = 30; calibrationFactor = 1; calibrationApplied = false; pendingCalibration = null; $('#clearCalibration').hidden = true; $('#homeDays').value = daysAtHome; $('#afaSlider').value = defaultAfa; baselineBill = null; resetSimulation(); renderAppliances(); updateAfaLabel(); updateBill(true); });
 $('#infoToggle').addEventListener('click', () => { const note = $('#formulaNote'); note.hidden = !note.hidden; $('#infoToggle').setAttribute('aria-expanded', String(!note.hidden)); });
 $('#touToggle').addEventListener('click', () => { touEnabled = !touEnabled; updateBill(true); updateSimulationPanel(); });
 function updateAfaLabel() { $('#afaValue').textContent = `${afaRate >= 0 ? '+' : ''}${afaRate.toFixed(2)} sen/kWh`; }

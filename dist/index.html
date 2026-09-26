@@ -135,7 +135,7 @@
 
         <div class="bill-amount"><span>RM</span><strong id="billTotal">0.00</strong></div>
         <div class="bill-delta" id="billDelta">Make a change to compare</div>
-        <p class="estimate-disclaimer">Simulation estimate · not measured usage or an official bill</p>
+        <p class="estimate-disclaimer" id="estimateDisclaimer">Simulation estimate · not measured usage or an official bill</p>
 
         <div class="meter-block">
           <div class="meter-labels"><span><b id="kwhTotal">0</b> kWh / month</span><span id="thresholdText">800 kWh protection</span></div>
@@ -164,13 +164,22 @@
         </div>
 
         <section class="calibration-card" aria-labelledby="calibrationTitle">
-          <div class="section-title"><div><p class="eyebrow">REAL BILL CHECK</p><h2 id="calibrationTitle">Calibrate against your bill</h2></div></div>
-          <div class="calibration-inputs">
-            <label><span>Actual usage</span><input id="actualKwh" type="number" min="0" step="1" placeholder="kWh"></label>
-            <label><span>Actual bill</span><input id="actualBill" type="number" min="0" step="0.01" placeholder="RM"></label>
-            <label><span>Billing days</span><input id="actualDays" type="number" min="1" max="45" step="1" value="30"></label>
+          <div class="section-title"><div><p class="eyebrow">REAL USAGE CHECK</p><h2 id="calibrationTitle">Match my real usage</h2></div></div>
+          <label class="calibration-source"><span>Reading source</span><select id="calibrationMode"><option value="bill">Electricity bill</option><option value="meter">Meter readings</option></select></label>
+          <div class="calibration-fields" id="billCalibrationFields">
+            <label><span>Usage on bill</span><input id="billUsageKwh" type="number" min="0" step="0.1" inputmode="decimal" placeholder="kWh"></label>
+            <label><span>Billing days</span><input id="billUsageDays" type="number" min="1" max="90" step="1" inputmode="numeric" value="30"></label>
           </div>
-          <p id="calibrationResult" aria-live="polite">Enter a real bill to see how closely your configured home matches it.</p>
+          <div class="calibration-fields" id="meterCalibrationFields" hidden>
+            <label><span>Previous reading</span><input id="previousMeterKwh" type="number" min="0" step="0.1" inputmode="decimal" placeholder="kWh"></label>
+            <label><span>Current reading</span><input id="currentMeterKwh" type="number" min="0" step="0.1" inputmode="decimal" placeholder="kWh"></label>
+            <label><span>Days between</span><input id="meterReadingDays" type="number" min="1" max="90" step="1" inputmode="numeric" value="7"></label>
+          </div>
+          <p id="calibrationResult" aria-live="polite">Enter the kWh from your bill or meter.</p>
+          <div class="calibration-actions">
+            <button id="applyCalibration" type="button" disabled>Use this adjustment</button>
+            <button id="clearCalibration" type="button" hidden>Remove adjustment</button>
+          </div>
         </section>
 
         <section class="breakdown" aria-labelledby="billTitle">

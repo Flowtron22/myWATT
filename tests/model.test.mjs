@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   applianceEnergyForDays,
   calculateBill,
+  calculateUsageCalibration,
   integrateSimulationInterval,
   isActiveAtTime,
   isProtectionConfigCurrent,
@@ -24,6 +25,16 @@ test('high-use energy rate begins above 1,500 kWh', () => {
   assert.equal(bill(1501).generalRate, tariffConfig.rates.generalHigh);
 });
 test('negative AFA is represented as a rebate for unprotected usage', () => assert.ok(bill(900, false, { peakKwh:0, offpeakKwh:900 }, -5).afa < 0));
+test('usage calibration compares the same measured period', () => {
+  const result = calculateUsageCalibration({ measuredKwh:72, measuredDays:7, simulatedMonthlyKwh:277.7142857, daysPerMonth:30 });
+  assert.ok(Math.abs(result.simulatedForPeriod - 64.8) < 1e-6);
+  assert.ok(Math.abs(result.factor - 72 / 64.8) < 1e-6);
+  assert.equal(Math.round(result.matchPercent), 90);
+});
+test('usage calibration rejects empty or unusable readings', () => {
+  assert.equal(calculateUsageCalibration({ measuredKwh:0, measuredDays:7, simulatedMonthlyKwh:300 }), null);
+  assert.equal(calculateUsageCalibration({ measuredKwh:20, measuredDays:0, simulatedMonthlyKwh:300 }), null);
+});
 test('days-per-week affects monthly energy', () => {
   const fiveDays = appliance({ daysPerWeek:5 });
   assert.equal(applianceEnergyForDays(fiveDays, state), 30 * 5 / 7);
