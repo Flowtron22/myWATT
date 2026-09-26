@@ -701,10 +701,26 @@ function fittedCanvasText(context, text, maxWidth) {
   while (clipped.length && context.measureText(`${clipped}…`).width > maxWidth) clipped = clipped.slice(0, -1);
   return `${clipped}…`;
 }
+function shareBillRows(bill) {
+  const rows = bill.useTou ? [
+    ['Peak energy charge', `${(bill.peakRate * 100).toFixed(2)} sen × ${bill.peakKwh.toFixed(1)} kWh`, bill.peakKwh * bill.peakRate, false],
+    ['Off-peak energy charge', `${(bill.offpeakRate * 100).toFixed(2)} sen × ${bill.offpeakKwh.toFixed(1)} kWh`, bill.offpeakKwh * bill.offpeakRate, false]
+  ] : [['Energy charge', `${(bill.generalRate * 100).toFixed(2)} sen × ${bill.kwh.toFixed(1)} kWh`, bill.energy, false]];
+  const eeRate = incentiveRate(bill.kwh) * 100;
+  return rows.concat([
+    ['Capacity charge', `4.55 sen × ${bill.kwh.toFixed(1)} kWh`, bill.capacity, false],
+    ['Network charge', `12.85 sen × ${bill.kwh.toFixed(1)} kWh`, bill.network, false],
+    ['Energy Efficiency Incentive', eeRate ? `${eeRate.toFixed(2)} sen rebate on all kWh` : 'Not available above 1,000 kWh', bill.incentive, true],
+    ['Automatic Fuel Adjustment', bill.protectedUser ? `Exempt under current ${protectionThreshold} kWh protection` : `${afaRate >= 0 ? '+' : ''}${afaRate.toFixed(2)} sen × ${bill.kwh.toFixed(1)} kWh`, Math.abs(bill.afa), bill.afa < 0],
+    ['Retail charge', bill.protectedUser ? 'Exempt under current protection' : 'Fixed monthly charge', bill.retail, false],
+    ['Renewable Energy Fund', bill.kwh <= 300 ? 'Exempt at 300 kWh and below' : '1.6% of eligible usage charges', bill.kwtbb, false],
+    ['Service tax', bill.protectedUser ? 'Exempt under current protection' : '8% on estimated taxable portion', bill.sst, false]
+  ]);
+}
 function createMeterResultCanvas() {
   const canvas = document.createElement('canvas');
-  canvas.width = 900;
-  canvas.height = 1080;
+  canvas.width = 1600;
+  canvas.height = 1020;
   const context = canvas.getContext('2d');
   const totalKwh = monthlyKwh();
   const bill = calculateBill(totalKwh);
@@ -715,37 +731,42 @@ function createMeterResultCanvas() {
   const rankedKwh = entries.reduce((sum, entry) => sum + entry.kwh, 0);
   const leaders = entries.slice(0, 5);
   const leaderKwh = leaders[0]?.kwh || 0;
+  const leftWidth = 760;
+  const siteLabel = '@ my-watt.vercel.app';
 
   const backdrop = context.createLinearGradient(0, 0, 0, canvas.height);
   backdrop.addColorStop(0, '#073d9f');
   backdrop.addColorStop(1, '#031b56');
   context.fillStyle = backdrop;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  roundedPath(context, 28, 28, 844, 1024, 32);
+  context.fillRect(0, 0, leftWidth, canvas.height);
+  context.fillStyle = '#fffdf6';
+  context.fillRect(leftWidth, 0, canvas.width - leftWidth, canvas.height);
+
+  roundedPath(context, 24, 24, leftWidth - 48, canvas.height - 48, 28);
   context.strokeStyle = '#ffd62e';
   context.lineWidth = 3;
   context.stroke();
 
   context.fillStyle = '#62c9ff';
-  context.font = '800 22px Arial, sans-serif';
-  context.fillText('LIVE BILLING RUN', 68, 84);
+  context.font = '800 18px Arial, sans-serif';
+  context.fillText('LIVE BILLING RUN', 54, 68);
   context.fillStyle = '#fffdf6';
-  context.font = '900 38px Arial, sans-serif';
-  context.fillText(`Day ${daysAtHome} of ${daysAtHome}`, 68, 132);
-  roundedPath(context, 674, 68, 150, 52, 26);
+  context.font = '900 30px Arial, sans-serif';
+  context.fillText(`Day ${daysAtHome} of ${daysAtHome}`, 54, 108);
+  roundedPath(context, 570, 50, 140, 48, 24);
   context.fillStyle = '#0b3476';
   context.fill();
   context.strokeStyle = '#62c9ff';
   context.lineWidth = 2;
   context.stroke();
   context.fillStyle = '#fffdf6';
-  context.font = '900 20px Arial, sans-serif';
+  context.font = '900 18px Arial, sans-serif';
   context.textAlign = 'center';
-  context.fillText('COMPLETE', 749, 101);
+  context.fillText('COMPLETE', 640, 81);
   context.textAlign = 'left';
 
-  roundedPath(context, 68, 164, 756, 164, 24);
-  const meterGradient = context.createLinearGradient(0, 164, 0, 328);
+  roundedPath(context, 54, 132, 656, 136, 20);
+  const meterGradient = context.createLinearGradient(0, 132, 0, 268);
   meterGradient.addColorStop(0, '#e6ebf1');
   meterGradient.addColorStop(1, '#aab7c8');
   context.fillStyle = meterGradient;
@@ -755,20 +776,20 @@ function createMeterResultCanvas() {
   context.stroke();
 
   const formatted = Math.min(999999.99, Math.max(0, totalKwh)).toFixed(2).padStart(9, '0');
-  const boxWidth = 66, boxHeight = 78, gap = 8, decimalWidth = 24;
+  const boxWidth = 52, boxHeight = 62, gap = 7, decimalWidth = 20;
   const totalMeterWidth = formatted.split('').reduce((sum, character) => sum + (character === '.' ? decimalWidth : boxWidth), 0) + gap * (formatted.length - 1);
-  let meterX = (canvas.width - totalMeterWidth) / 2;
+  let meterX = (leftWidth - totalMeterWidth) / 2;
   formatted.split('').forEach(character => {
     if (character === '.') {
       context.fillStyle = '#0a285b';
-      context.font = '900 38px Arial, sans-serif';
+      context.font = '900 32px Arial, sans-serif';
       context.textAlign = 'center';
-      context.fillText('.', meterX + decimalWidth / 2, 263);
+      context.fillText('.', meterX + decimalWidth / 2, 220);
       meterX += decimalWidth + gap;
       return;
     }
-    roundedPath(context, meterX, 196, boxWidth, boxHeight, 6);
-    const digitGradient = context.createLinearGradient(0, 196, 0, 274);
+    roundedPath(context, meterX, 158, boxWidth, boxHeight, 5);
+    const digitGradient = context.createLinearGradient(0, 158, 0, 220);
     digitGradient.addColorStop(0, '#041b4b');
     digitGradient.addColorStop(.48, '#0b3476');
     digitGradient.addColorStop(.52, '#061f55');
@@ -778,68 +799,173 @@ function createMeterResultCanvas() {
     context.strokeStyle = '#25477c';
     context.stroke();
     context.fillStyle = '#f6f8fb';
-    context.font = '900 48px Consolas, monospace';
+    context.font = '900 38px Consolas, monospace';
     context.textAlign = 'center';
-    context.fillText(character, meterX + boxWidth / 2, 252);
+    context.fillText(character, meterX + boxWidth / 2, 202);
     meterX += boxWidth + gap;
   });
   context.fillStyle = '#12366d';
-  context.font = '900 18px Arial, sans-serif';
+  context.font = '900 16px Arial, sans-serif';
   context.textAlign = 'center';
-  context.fillText('kWh', canvas.width / 2, 307);
+  context.fillText('kWh', leftWidth / 2, 248);
   context.textAlign = 'left';
 
-  [[68, 'Energy so far', `${totalKwh.toFixed(1)} kWh`], [454, 'Estimated bill', `RM ${bill.total.toFixed(2)}`]].forEach(([x, label, value]) => {
-    roundedPath(context, x, 354, 370, 112, 18);
+  [[54, 'Energy so far', `${totalKwh.toFixed(1)} kWh`], [386, 'Estimated bill', `RM ${bill.total.toFixed(2)}`]].forEach(([x, label, value]) => {
+    roundedPath(context, x, 290, 324, 84, 14);
     context.fillStyle = 'rgba(255,255,255,.07)';
     context.fill();
     context.fillStyle = '#b9d5ff';
-    context.font = '700 20px Arial, sans-serif';
-    context.fillText(label, x + 22, 389);
+    context.font = '700 16px Arial, sans-serif';
+    context.fillText(label, x + 18, 319);
     context.fillStyle = '#fffdf6';
-    context.font = '900 30px Arial, sans-serif';
-    context.fillText(value, x + 22, 433);
+    context.font = '900 25px Arial, sans-serif';
+    context.fillText(value, x + 18, 354);
   });
 
   leaders.forEach(({ appliance, kwh }, rank) => {
-    const y = 500 + rank * 94;
+    const y = 400 + rank * 72;
     const usage = leaderKwh ? Math.max(.02, kwh / leaderKwh) : 0;
-    roundedPath(context, 68, y, 756, 76, 10);
+    roundedPath(context, 54, y, 656, 58, 8);
     context.fillStyle = 'rgba(1,13,49,.72)';
     context.fill();
     context.save();
-    roundedPath(context, 68, y, 756, 76, 10);
+    roundedPath(context, 54, y, 656, 58, 8);
     context.clip();
     context.fillStyle = ['#ff625c','#53db8b','#62c9ff','#d4a900','#d4a900'][rank];
     context.globalAlpha = .78;
-    context.fillRect(68, y, 756 * usage, 76);
+    context.fillRect(54, y, 656 * usage, 58);
     context.restore();
     context.fillStyle = '#ffffff';
-    context.font = '900 22px Arial, sans-serif';
-    context.fillText(fittedCanvasText(context, appliance.name, 430), 88, y + 45);
+    context.font = '900 18px Arial, sans-serif';
+    context.fillText(fittedCanvasText(context, appliance.name, 380), 70, y + 35);
     const share = bill.total * (rankedKwh ? kwh / rankedKwh : 0);
     context.textAlign = 'right';
-    context.font = '900 20px Arial, sans-serif';
-    context.fillText(`${kwh.toFixed(kwh < 10 ? 2 : 1)} kWh`, 802, y + 31);
+    context.font = '900 17px Arial, sans-serif';
+    context.fillText(`${kwh.toFixed(kwh < 10 ? 2 : 1)} kWh`, 694, y + 25);
     context.fillStyle = '#e7f2ff';
-    context.font = '700 15px Arial, sans-serif';
-    context.fillText(`RM ${share.toFixed(2)} share`, 802, y + 55);
+    context.font = '700 13px Arial, sans-serif';
+    context.fillText(`RM ${share.toFixed(2)} share`, 694, y + 45);
     context.textAlign = 'left';
   });
 
-  context.fillStyle = '#ffd62e';
-  context.font = '900 28px Arial, sans-serif';
-  context.fillText('myWATT???', 68, 1010);
   context.fillStyle = '#b9d5ff';
   context.font = '700 16px Arial, sans-serif';
+  context.fillText('Days at home', 54, 792);
+  context.fillStyle = '#ffd62e';
+  context.font = '900 17px Arial, sans-serif';
   context.textAlign = 'right';
-  context.fillText('Planning simulation · not an official TNB bill', 824, 1008);
+  context.fillText(`${daysAtHome} days`, 710, 792);
   context.textAlign = 'left';
+  roundedPath(context, 54, 808, 656, 12, 6);
+  context.fillStyle = 'rgba(255,255,255,.15)';
+  context.fill();
+  roundedPath(context, 54, 808, 656, 12, 6);
+  context.fillStyle = '#ffd62e';
+  context.fill();
+
+  context.fillStyle = '#ffd62e';
+  context.font = '900 28px Arial, sans-serif';
+  context.fillText('myWATT???', 54, 922);
+  context.fillStyle = '#b9d5ff';
+  context.font = '800 18px Arial, sans-serif';
+  context.fillText(siteLabel, 54, 954);
+  context.font = '700 14px Arial, sans-serif';
+  context.textAlign = 'right';
+  context.fillText('Planning simulation · not an official TNB bill', 710, 952);
+  context.textAlign = 'left';
+
+  const rightX = leftWidth + 46;
+  const rightEdge = canvas.width - 46;
+  context.fillStyle = '#0759c7';
+  context.font = '900 17px Arial, sans-serif';
+  context.fillText('ESTIMATED MONTHLY BILL', rightX, 62);
+  context.fillStyle = '#5b6f92';
+  context.font = '700 15px Arial, sans-serif';
+  context.fillText(bill.useTou ? 'Domestic ToU · RP4' : 'Domestic General · RP4', rightX, 88);
+  roundedPath(context, rightEdge - 190, 42, 190, 44, 22);
+  context.fillStyle = bill.protectedUser ? '#d8f3ff' : '#ffe0d5';
+  context.fill();
+  context.fillStyle = bill.protectedUser ? '#0b3476' : '#b43c1f';
+  context.font = '900 14px Arial, sans-serif';
+  context.textAlign = 'center';
+  context.fillText(bill.protectedUser ? `PROTECTED ≤${protectionThreshold} KWH` : 'ABOVE PROTECTION', rightEdge - 95, 69);
+  context.textAlign = 'left';
+
+  context.fillStyle = '#031b56';
+  context.font = '900 24px Arial, sans-serif';
+  context.fillText('RM', rightX, 145);
+  context.font = '900 72px Arial, sans-serif';
+  context.fillText(bill.total.toFixed(2), rightX + 48, 176);
+  const billDifference = bill.total - (baselineBill ?? bill.total);
+  context.fillStyle = '#5b6f92';
+  context.font = '700 14px Arial, sans-serif';
+  context.fillText(Math.abs(billDifference) < .01 ? 'Your configured household estimate' : `${billDifference < 0 ? '↓' : '↑'} RM ${Math.abs(billDifference).toFixed(2)} ${billDifference < 0 ? 'saved' : 'more'} from your starting setup`, rightX, 210);
+  context.fillText(calibrationApplied ? 'Meter-adjusted simulation estimate · not an official bill' : 'Simulation estimate · not measured usage or an official bill', rightX, 236);
+
+  context.fillStyle = '#031b56';
+  context.font = '900 19px Arial, sans-serif';
+  context.fillText(`${Math.round(bill.kwh).toLocaleString()} kWh / month`, rightX, 280);
+  context.fillStyle = '#5b6f92';
+  context.font = '700 14px Arial, sans-serif';
+  context.textAlign = 'right';
+  context.fillText(`${protectionThreshold} kWh protection`, rightEdge, 278);
+  context.textAlign = 'left';
+  roundedPath(context, rightX, 294, rightEdge - rightX, 12, 6);
+  context.fillStyle = '#d6dce5';
+  context.fill();
+  context.save();
+  roundedPath(context, rightX, 294, rightEdge - rightX, 12, 6);
+  context.clip();
+  const usageGradient = context.createLinearGradient(rightX, 0, rightEdge, 0);
+  usageGradient.addColorStop(0, '#ffd62e');
+  usageGradient.addColorStop(.6, '#ffb72e');
+  usageGradient.addColorStop(1, '#ff625c');
+  context.fillStyle = usageGradient;
+  context.fillRect(rightX, 294, (rightEdge - rightX) * Math.min(1, bill.kwh / 1200), 12);
+  context.restore();
+  const protectionX = rightX + (rightEdge - rightX) * Math.min(1, protectionThreshold / 1200);
+  context.fillStyle = '#294b75';
+  context.fillRect(protectionX, 291, 3, 18);
+
+  const billRows = shareBillRows(bill);
+  const rowStart = 334;
+  const rowHeight = billRows.length > 8 ? 61 : 68;
+  billRows.forEach(([label, sub, value, rebate], index) => {
+    const y = rowStart + index * rowHeight;
+    context.fillStyle = '#031b56';
+    context.font = '800 16px Arial, sans-serif';
+    context.fillText(label, rightX, y);
+    context.fillStyle = '#71809a';
+    context.font = '700 12px Arial, sans-serif';
+    context.fillText(fittedCanvasText(context, sub, 520), rightX, y + 21);
+    context.fillStyle = rebate ? '#087a61' : '#031b56';
+    context.font = '900 16px Arial, sans-serif';
+    context.textAlign = 'right';
+    context.fillText(`${rebate ? '−' : ''}RM ${Math.abs(value).toFixed(2)}`, rightEdge, y + 7);
+    context.textAlign = 'left';
+    context.strokeStyle = '#d6dce5';
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(rightX, y + rowHeight - 12);
+    context.lineTo(rightEdge, y + rowHeight - 12);
+    context.stroke();
+  });
+  const totalY = rowStart + billRows.length * rowHeight + 6;
+  context.fillStyle = '#031b56';
+  context.font = '800 17px Arial, sans-serif';
+  context.fillText('Estimated current charge', rightX, totalY);
+  context.textAlign = 'right';
+  context.font = '900 19px Arial, sans-serif';
+  context.fillText(`RM ${bill.total.toFixed(2)}`, rightEdge, totalY);
+  context.textAlign = 'left';
+  context.fillStyle = '#0759c7';
+  context.font = '900 16px Arial, sans-serif';
+  context.fillText(siteLabel, rightX, 982);
   return canvas;
 }
 function downloadMeterResult(blob) {
   const link = document.createElement('a');
-  link.download = `myWATT-meter-${daysAtHome}-days.png`;
+  link.download = `myWATT-result-${daysAtHome}-days.png`;
   link.href = URL.createObjectURL(blob);
   document.body.append(link);
   link.click();
@@ -849,11 +975,15 @@ $('#shareResult').addEventListener('click', async () => {
   const canvas = createMeterResultCanvas();
   const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
   if (!blob) return;
-  const file = new File([blob], `myWATT-meter-${daysAtHome}-days.png`, { type:'image/png' });
-  const shareData = { files:[file], title:'myWATT??? meter result', text:'My household energy simulation result from myWATT???' };
+  const file = new File([blob], `myWATT-result-${daysAtHome}-days.png`, { type:'image/png' });
+  const shareData = { files:[file], title:'myWATT??? result', text:'My household energy simulation result from myWATT???\nhttps://my-watt.vercel.app/', url:'https://my-watt.vercel.app/' };
   if (navigator.canShare?.({ files:[file] })) {
     try { await navigator.share(shareData); return; }
-    catch (error) { if (error?.name === 'AbortError') return; }
+    catch (error) {
+      if (error?.name === 'AbortError') return;
+      try { await navigator.share({ files:[file], title:shareData.title, text:shareData.text }); return; }
+      catch (retryError) { if (retryError?.name === 'AbortError') return; }
+    }
   }
   downloadMeterResult(blob);
 });

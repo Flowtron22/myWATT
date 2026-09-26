@@ -12,6 +12,11 @@ Repository: https://github.com/Flowtron22/myWATT
 - Recalculate the full tariff from adjusted kWh instead of scaling the ringgit total, while keeping appliance estimates unchanged.
 - Save the optional adjustment with household scenarios and label adjusted results clearly as estimates.
 
+## Combined result sharing
+
+- Expand the completed simulation PNG into one landscape image containing the live meter, top-five appliance ranking, estimated monthly bill and full tariff breakdown.
+- Print `@ my-watt.vercel.app` into the shared image and include the clickable site URL in native share data where the receiving platform supports it.
+
 ## Rolling energy meter
 
 - Add a mechanical-style kWh meter to the live billing run without extra branding or explanatory text.
@@ -45,7 +50,7 @@ myWATT??? is an educational household electricity planning sandbox by Ureka Game
 - The header uses the dedicated circular myWATT artwork as its brand mark.
 - The simulation scene reserves enough height for the complete live-billing card and its controls.
 - Replace the decorative Three.js house with a lightweight day-and-night sky driven by the simulation clock, and center the live meter as the primary visual.
-- Let users share or download a focused PNG of the completed meter card, without adding the wider household configuration or bill panel.
+- Let users share or download a focused PNG when the selected simulation finishes.
 - First-time visitors see a concise notice that myWATT??? estimates and simulates energy use and is not an official TNB bill.
 - The estimated total keeps a compact simulation disclaimer visible after the welcome notice is dismissed.
 - Keep the simulation interface within the myWATT??? royal-blue, warm-yellow, and cream visual theme.
