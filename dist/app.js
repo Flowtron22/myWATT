@@ -90,7 +90,7 @@ let calibrationApplied = false;
 let pendingCalibration = null;
 let simMinute = 420;
 let playing = false;
-let simSpeed = 1;
+let simSpeed = 5;
 let daysAtHome = 30;
 let simDay = 0;
 let runKwh = 0;
@@ -216,6 +216,7 @@ function resetSimulation(resetClock = true) {
   runComplete = daysAtHome === 0;
   $('#playButton').setAttribute('aria-pressed', 'false');
   $('#playButton').disabled = daysAtHome === 0;
+  $('#finishSimulation').disabled = daysAtHome === 0;
   $('#playButton').innerHTML = daysAtHome === 0 ? '<span>⌂</span> Background only' : '<span>▶</span> Run simulation';
   if (resetClock) setTime(0);
   updateSimulationPanel();
@@ -1001,6 +1002,25 @@ document.querySelectorAll('[data-speed]').forEach(button => button.addEventListe
     candidate.setAttribute('aria-pressed', String(selected));
   });
 }));
+$('#finishSimulation').addEventListener('click', () => {
+  if (daysAtHome === 0) return;
+  playing = false;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  animationFrameId = 0;
+  runKwh = rawMonthlyKwh();
+  const finalSplit = modelTouEnergySplit(appliances, { daysAtHome, daysPerMonth, representativeWeekdays }, runKwh);
+  runPeakKwh = finalSplit.peakKwh;
+  runOffpeakKwh = finalSplit.offpeakKwh;
+  runApplianceKwh = Object.fromEntries(appliances
+    .filter(appliance => appliance.included !== false && appliance.on)
+    .map(appliance => [appliance.id, applianceEnergyForDays(appliance)]));
+  simDay = daysAtHome;
+  runComplete = true;
+  $('#playButton').setAttribute('aria-pressed', 'false');
+  $('#playButton').innerHTML = '<span>↻</span> Run again';
+  setTime(0);
+  updateSimulationPanel();
+});
 
 function isActiveAtTime(a) { return modelIsActiveAtTime(a, simMinute, simDay || 1); }
 function updateLiveLoad() {

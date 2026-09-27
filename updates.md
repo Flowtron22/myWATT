@@ -18,6 +18,11 @@ Repository: https://github.com/Flowtron22/myWATT
 - Print `@ my-watt.vercel.app` into the shared image and include the clickable site URL in native share data where the receiving platform supports it.
 - Avoid duplicated links by keeping the URL separate from the normal share caption and adding it to caption text only for compatibility fallback.
 
+## Simulation controls
+
+- Replace the old 1×, 8× and 24× labels with compact `>`, `>>` and `>]` controls.
+- Run the normal simulation at 5×, fast-forward it at 32×, or jump directly to the mathematically identical final result.
+
 ## Rolling energy meter
 
 - Add a mechanical-style kWh meter to the live billing run without extra branding or explanatory text.

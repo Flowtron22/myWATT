@@ -52,6 +52,7 @@ h2 { font-size: 1rem; margin-bottom: 0; }
 .speed-control { display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: rgba(0,0,0,.18); }
 .speed-control button { border: 0; color: var(--muted); background: transparent; padding: 6px 8px; border-radius: 999px; font-size: .68rem; font-weight: 900; cursor: pointer; }
 .speed-control button.active { background: var(--cream); color: var(--ink); }
+.speed-control button:disabled { cursor: not-allowed; opacity: .35; }
 input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer; }
 .scene-wrap { --stars-opacity: 0; --orb-x: 50%; --orb-y: 24%; --orb-color: #ffd62e; --orb-glow: rgba(255,214,46,.5); position: relative; display: grid; place-items: center; height: clamp(540px, 64vh, 620px); min-height: 540px; margin-top: 22px; border: 1px solid rgba(98,201,255,.6); border-radius: 24px; overflow: hidden; background: linear-gradient(180deg,#0f6ddd 0%,#1688e5 50%,#62c9ff 100%); box-shadow: 0 24px 80px rgba(0,13,57,.34), inset 0 0 70px rgba(29,121,255,.16); }
 .scene-wrap::before { content: ""; position: absolute; inset: 0; opacity: .2; background-image: radial-gradient(circle at 15% 28%,rgba(255,255,255,.5) 0 1px,transparent 1.5px),radial-gradient(circle at 76% 17%,rgba(255,255,255,.42) 0 1px,transparent 1.5px); background-size: 90px 90px,130px 130px; }

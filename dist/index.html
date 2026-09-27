@@ -51,9 +51,9 @@
               <label><span class="sr-only">Time of day</span><input id="timeSlider" type="range" min="0" max="1439" value="420"></label>
             </div>
             <div class="speed-control" aria-label="Simulation speed">
-              <button class="active" type="button" data-speed="1" aria-pressed="true">1×</button>
-              <button type="button" data-speed="8" aria-pressed="false">8×</button>
-              <button type="button" data-speed="24" aria-pressed="false">24×</button>
+              <button class="active" type="button" data-speed="5" aria-label="Normal simulation speed, 5 times" title="Normal · 5×" aria-pressed="true">&gt;</button>
+              <button type="button" data-speed="32" aria-label="Fast-forward simulation, 32 times" title="Fast-forward · 32×" aria-pressed="false">&gt;&gt;</button>
+              <button id="finishSimulation" type="button" aria-label="Jump to the final simulation result" title="Jump to result">&gt;]</button>
             </div>
           </div>
         </div>
