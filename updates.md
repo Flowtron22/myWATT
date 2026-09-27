@@ -20,7 +20,7 @@ Repository: https://github.com/Flowtron22/myWATT
 
 ## Simulation controls
 
-- Replace the old 1×, 8× and 24× labels with compact `>`, `>>` and `>]` controls.
+- Replace the old 1×, 8× and 24× labels with proper vector play, fast-forward and skip-to-end controls.
 - Run the normal simulation at 5×, fast-forward it at 32×, or jump directly to the mathematically identical final result.
 
 ## Rolling energy meter

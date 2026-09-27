@@ -50,7 +50,9 @@ h2 { font-size: 1rem; margin-bottom: 0; }
 .clock-wrap { min-width: 116px; }
 .clock-wrap > span { display: block; text-align: center; font-size: 1.45rem; font-variant-numeric: tabular-nums; font-weight: 800; }
 .speed-control { display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: rgba(0,0,0,.18); }
-.speed-control button { border: 0; color: var(--muted); background: transparent; padding: 6px 8px; border-radius: 999px; font-size: .68rem; font-weight: 900; cursor: pointer; }
+.speed-control button { display: grid; width: 31px; height: 29px; place-items: center; border: 0; color: var(--muted); background: transparent; padding: 6px; border-radius: 999px; cursor: pointer; }
+.speed-control svg { width: 18px; height: 18px; fill: currentColor; }
+.speed-control button:nth-child(n+2) svg { width: 21px; }
 .speed-control button.active { background: var(--cream); color: var(--ink); }
 .speed-control button:disabled { cursor: not-allowed; opacity: .35; }
 input[type="range"] { width: 100%; accent-color: var(--yellow); cursor: pointer; }
