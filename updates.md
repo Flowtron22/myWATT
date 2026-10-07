@@ -1,8 +1,16 @@
 # myWATT??? updates
 
-Last updated: 26 September 2026
+Last updated: 7 October 2026
 
 Repository: https://github.com/Flowtron22/myWATT
+
+## October 2026 tariff refresh
+
+- Update the monthly Automatic Fuel Adjustment from +3.67 to +3.61 sen/kWh.
+- Keep the RP4 General and ToU base rates unchanged.
+- Retain the temporary 800 kWh protection for AFA, retail charge and SST through 31 December 2026.
+- Refresh the fuel-price cards with October AFA inputs and the latest dated Asia spot LNG reference.
+- Make tariff tests read the configured monthly AFA instead of repeating a stale hard-coded rate.
 
 ## Real-usage matching
 
@@ -51,7 +59,7 @@ Repository: https://github.com/Flowtron22/myWATT
 
 ## Current release
 
-myWATT??? is an educational household electricity planning sandbox by Ureka Games for Peninsular Malaysia. It estimates monthly energy use and the current charge using the RP4 domestic tariff model, September 2026 AFA input, and applicable protection rules.
+myWATT??? is an educational household electricity planning sandbox by Ureka Games for Peninsular Malaysia. It estimates monthly energy use and the current charge using the RP4 domestic tariff model, October 2026 AFA input, and applicable protection rules.
 
 - The header uses the dedicated circular myWATT artwork as its brand mark.
 - The simulation scene reserves enough height for the complete live-billing card and its controls.

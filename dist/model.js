@@ -3,7 +3,7 @@ export const tariffConfig = Object.freeze({
   daysPerMonth: 30,
   representativeWeekdays: 22,
   protection: Object.freeze({ thresholdKwh: 800, effectiveFrom: '2026-09-01', effectiveUntil: '2026-12-31' }),
-  afa: Object.freeze({ rateSenPerKwh: 3.67, period: 'Sep 2026' }),
+  afa: Object.freeze({ rateSenPerKwh: 3.61, period: 'Oct 2026' }),
   rates: Object.freeze({
     generalLow: .2703,
     generalHigh: .3703,

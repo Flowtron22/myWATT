@@ -13,9 +13,13 @@ import {
 
 const state = { daysAtHome:30, daysPerMonth:30, representativeWeekdays:22 };
 const appliance = (overrides = {}) => ({ id:'test', watts:1000, hours:1, qty:1, duty:1, on:true, included:true, start:14, daysPerWeek:7, ...overrides });
-const bill = (kwh, useTou = false, split = { peakKwh:0, offpeakKwh:kwh }, afaRate = 3.67) => calculateBill({ kwh, useTou, split, afaRate });
+const bill = (kwh, useTou = false, split = { peakKwh:0, offpeakKwh:kwh }, afaRate = tariffConfig.afa.rateSenPerKwh) => calculateBill({ kwh, useTou, split, afaRate });
 
 test('zero usage produces a zero bill', () => assert.equal(bill(0).total, 0));
+test('October 2026 AFA is configured at +3.61 sen/kWh', () => {
+  assert.equal(tariffConfig.afa.period, 'Oct 2026');
+  assert.equal(tariffConfig.afa.rateSenPerKwh, 3.61);
+});
 test('protection changes only above 800 kWh', () => {
   assert.equal(bill(800).protectedUser, true);
   assert.equal(bill(801).protectedUser, false);
